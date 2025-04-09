@@ -1,11 +1,8 @@
 from google.cloud import bigquery
 import google.auth
 from google.cloud import storage
-from google.auth.transport.requests import Request
-import os
 import math
 import io
-import json
 
 # Get google credentials downloaded by sftp as default
 credentials, project = google.auth.default()
