@@ -28,7 +28,7 @@ bucket = storage_client.get_bucket(bucket_name)
 # Runnning Query for each table and saving their parts in csv bucket
 for table in tables:
 
-    table_name = tables.table_id
+    table_name = table.table_id
 
     query_job = client.query(f"""
                              SELECT *
