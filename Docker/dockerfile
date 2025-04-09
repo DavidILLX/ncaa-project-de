@@ -1,0 +1,14 @@
+FROM python:3.13
+
+WORKDIR /app
+
+COPY /home/tomas/.gc/gcp_credentials.json /app/.gc/gcp_credentials.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/.gc/gcp_credentials.json
+
+RUN apt-get update && apt-get install -y wget 
+COPY requirements.txt .
+RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
+
+COPY export_from_bigquery_to_gcs.py .
+
+CMD ["python", "export_from_bigquery_to_gcs.py"]
