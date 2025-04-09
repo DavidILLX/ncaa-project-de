@@ -2,7 +2,7 @@ FROM python:3.13
 
 WORKDIR /app
 
-COPY /home/tomas/.gc/gcp_credentials.json /app/.gc/gcp_credentials.json
+COPY .gc/gcp_credentials.json /app/.gc/gcp_credentials.json
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/.gc/gcp_credentials.json
 
 RUN apt-get update && apt-get install -y wget 

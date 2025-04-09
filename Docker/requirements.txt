@@ -1,15 +1,6 @@
-<<<<<<< HEAD
 google-auth
 google-cloud-bigquery-storage
 google-cloud-bigquery
 db-dtypes
 pyarrow
 google-cloud-storage
-=======
-pip install google-auth
-pip install google-cloud-bigquery-storage
-pip install google-cloud-bigquery
-pip install db-dtypes
-pip install pyarrow
-pip install google-cloud-storage
->>>>>>> 2ad4264 (Initial commit with .gitignore)
