@@ -8,13 +8,10 @@ import io
 import json
 
 # Get google credentials downloaded by sftp as default
-
-credentials = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-service_account_info = json.loads(credentials)
-credentials, project = google.auth.load_credentials_from_dict(service_account_info)
+credentials, project = google.auth.default()
 
 # TO DO Add your project name here 
-client = bigquery.Client(credentials=credentials, project="ncaa-project-455709")
+client = bigquery.Client(credentials=credentials, project=project)
 storage_client = storage.Client()
 
 

@@ -1,19 +1,11 @@
-<<<<<<< HEAD
 # Ignore JSON files
 *.json
 
 # Ignore Terraform files that are typically not committed
-=======
-# Ignore all JSON files
-*.json
-
-# Ignore Terraform state files
->>>>>>> 2ad4264 (Initial commit with .gitignore)
 *.tfstate
 *.tfstate.*
 .terraform/
 terraform.tfvars
-<<<<<<< HEAD
 override.tf
 override.tf.json
 *_override.tf
@@ -39,21 +31,3 @@ bin/        # Common binary output directory
 obj/        # Common object output directory
 *.bak       # Backup files
 *.orig      # Original files
-=======
-.terragrunt-cache/
-
-# Logs
-*.log
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-#text
-.odt
->>>>>>> 2ad4264 (Initial commit with .gitignore)
