@@ -3,7 +3,7 @@ volumes:
     driver: local
 services:
   kestra:
-    build: .
+    image: kestra/kestra:latest
     pull_policy: always
     user: "root"
     command: server standalone

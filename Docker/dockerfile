@@ -1,9 +1,6 @@
-FROM kestra/kestra:latest
+FROM python-3.12
 
-WORKDIR /app
-
-COPY /home/tomas/.gc/gcp_credentials.json /app/.gc/gcp_credentials.json
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/.gc/gcp_credentials.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/home/tomas/.gc/gcp_credentials.json
 
 RUN apt-get update && apt-get install -y python3 python3-pip
 COPY requirements.txt .
