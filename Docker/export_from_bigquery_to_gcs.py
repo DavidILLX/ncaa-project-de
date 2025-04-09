@@ -5,11 +5,13 @@ from google.auth.transport.requests import Request
 import os
 import math
 import io
+import json
 
 # Get google credentials downloaded by sftp as default
-credentials = google.auth.default()
-if credentials and credentials.expired and credentials.refresh_token:
-    credentials.refresh(Request())
+
+credentials = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+service_account_info = json.loads(credentials)
+credentials, project = google.auth.load_credentials_from_dict(service_account_info)
 
 # TO DO Add your project name here 
 client = bigquery.Client(credentials=credentials, project="ncaa-project-455709")
