@@ -39,9 +39,13 @@ services:
             tmpDir:
               path: /tmp/kestra-wd/tmp
           url: http://localhost:8080/
+      GCP_CREDENTIALS_PATH: /app/.gc/gcp_credentials.json
     ports:
       - "8080:8080"
       - "8081:8081"
+    secrets:
+      - source: service_account_key
+        target: /app/.gc/gcp_credentials.json
 
   pgadmin:
     image: dpage/pgadmin4
@@ -50,3 +54,7 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=root
     ports:
       - "8085:80"
+
+secrets:
+  service_account_key:
+    file: /home/tomas/.gc/gcp_credentials.json

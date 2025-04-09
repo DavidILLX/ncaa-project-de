@@ -19,6 +19,8 @@ dataset_id = "ncaa_basketball"
 dataset_ref = client.dataset(dataset_id, project=project_id)
 tables = list(client.list_tables(dataset_ref))
 
+print(f"Found {len(tables)} tables in {project_id}.{dataset_id}")
+
 # Should be - ncaa-bucket-dump
 bucket_name = "ncaa-bucket-dump"
 bucket = storage_client.get_bucket(bucket_name)
@@ -26,7 +28,7 @@ bucket = storage_client.get_bucket(bucket_name)
 # Runnning Query for each table and saving their parts in csv bucket
 for table in tables:
 
-    table_name = tables[table].table_id
+    table_name = tables.table_id
 
     query_job = client.query(f"""
                              SELECT *
@@ -36,6 +38,7 @@ for table in tables:
 
     chunk_size = 2000000
     num_chunks = math.ceil(len(df) / chunk_size)
+    print(f"table found: {table_name}")
 
     for i in range(num_chunks):
         df_chunk = df.iloc[i*chunk_size:(i+1)*chunk_size]
@@ -50,5 +53,6 @@ for table in tables:
         csv_buffer.seek(0)  
         blob = bucket.blob(f"{table_name}/{table_name}_part_{i+1}.zip")
         blob.upload_from_file(csv_buffer)
+        print(f"saved as {table_name}/{table_name}_part_{i+1}.zip")
 
 

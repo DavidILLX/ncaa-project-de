@@ -10,7 +10,6 @@ apt-get install -y wget curl lsb-release
 
 # Install Docker
 apt-get install -y docker.io
-apt-get install -y docker-buildx-plugin
 
 # Install Docker Compose to /usr/local/bin
 mkdir -p bin

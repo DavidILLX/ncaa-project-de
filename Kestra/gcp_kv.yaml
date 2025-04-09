@@ -1,5 +1,5 @@
 id: gcp_kv
-namespace: ncaa project
+namespace: ncaa_project
 
 tasks:
   - id: gcp_project_id
