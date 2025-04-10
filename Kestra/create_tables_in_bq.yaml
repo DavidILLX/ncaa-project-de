@@ -4,14 +4,21 @@ description: Creating tables with schema and structure in BigQuery based on csv 
 inputs:
 - id: table
   type: SELECT
-  displayName: Select which table to load
+  displayName: Select which table to load to dataset on BigQuery
   values: [
           "mascots", "mbb_games_sr", "mbb_historical_teams_games", "mbb_historical_teams_seasons", 
           "mbb_historical_tournament_games", "mbb_pbp_sr", "mbb_players_games_sr", "mbb_teams", 
           "mbb_teams_games_sr", "team_colors"
           ]
   defaults: mascots
-  allowCustomValue: true
+  allowCustomValue: false
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      projectId: "{{kv('GCP_PROJECT_ID')}}"
+      location: "{{kv('GCP_LOCATION')}}"
+      bucket: "{{kv('GCP_BUCKET_NAME')}}"
 
 tasks:
   - id: set_label
@@ -24,18 +31,15 @@ tasks:
     from: "gs://{{kv('GCP_BUCKET_NAME')}}/"
     projectId: "{{kv('GCP_PROJECT_ID')}}"
 
-  - id: if_mascots_create_table
+  - id: if_mascots
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mascots/mascots.csv"
-        in: "{{outputs.list-files.uris}}" 
+    condition: "{{inputs.table == 'mascots'}}"
     then:
       - id: bq_mascots_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_mascots`
-          (
+            (
               id STRING OPTIONS (description = 'Unique ID'),
               market STRING OPTIONS (description = 'Market'),
               name STRING OPTIONS (description = 'Name'),
@@ -53,19 +57,15 @@ tasks:
               tax_domain STRING OPTIONS (description = 'Taxonomic Domain'),
               non_tax_type STRING OPTIONS (description = 'Non-Taxonomic Type')
             )
-
-  - id: if_teams_create_table 
+  - id: if_mbb_games_sr
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams/mbb_teams.csv"
-        in: "{{outputs.list-files.uris}}"         
+    condition: "{{inputs.table == 'mbb_games_sr'}}"
     then:
       - id: bq_ncaa_teams_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams_info`
-          (
+            (
               market STRING OPTIONS (description = 'Market of the team'),
               alias STRING OPTIONS (description = 'Alias of the team'),
               name STRING OPTIONS (description = 'Name of the team'),
@@ -94,20 +94,16 @@ tasks:
               logo_large STRING OPTIONS (description = 'URL for the large logo'),
               logo_medium STRING OPTIONS (description = 'URL for the medium logo'),
               logo_small STRING OPTIONS (description = 'URL for the small logo')
-          ) 
-
-  - id: if_ncaa__historic_games_create_table
+            ) 
+  - id: if_mbb_historical_teams_games
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_games/mbb_historical_teams_games.csv"
-        in: "{{outputs.list-files.uris}}" 
+    condition: "{{inputs.table == 'mbb_historical_teams_games'}}"
     then:
       - id: bq_ncaa_historic_teams_games_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historic_teams_games`
-          (
+            (
               season INTEGER OPTIONS (description = 'The season of the game'),
               scheduled_date STRING OPTIONS (description = 'The scheduled date of the game (as a string)'),
               attendance FLOAT OPTIONS (description = 'The attendance at the game'),
@@ -126,22 +122,19 @@ tasks:
               opp_alias STRING OPTIONS (description = 'The alias of the opponent'),
               opp_current_division STRING OPTIONS (description = 'The current division of the opponent'),
               opp_points_game INTEGER OPTIONS (description = 'The points scored by the opponent in the game')
-          )
-          PARTITION BY INTEGER(season)
-          CLUSTER BY CAST(DATE(scheduled_date));
+            )
+            PARTITION BY INTEGER(season)
+            CLUSTER BY CAST(DATE(scheduled_date));
 
-  - id: if_ncaa_historical_teams_seasons_create_table
+  - id: if_mbb_historical_teams_seasons
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_seasons/mbb_historical_teams_seasons.csv"
-        in: "{{outputs.list-files.uris}}" 
-    then:       
+    condition: "{{inputs.table == 'mbb_historical_teams_seasons'}}"
+    then:    
       - id: bq_ncaa_historical_teams_seasons_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_teams_seasons`
-          (
+            (
               team_id STRING OPTIONS (description = 'Unique ID for the team'),
               season INTEGER OPTIONS (description = 'The season year'),
               team_name STRING OPTIONS (description = 'Name of the team'),
@@ -153,20 +146,17 @@ tasks:
               points_against INTEGER OPTIONS (description = 'Total points scored against the team'),
               strength_of_schedule FLOAT OPTIONS (description = 'Strength of schedule rating'),
               simple_rating_system FLOAT OPTIONS (description = 'Simple Rating System score')
-          )
+            )
 
-  - id: if_ncaa_tournament_games_create_table
+  - id: if_mbb_historical_tournament_games
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_tournament_games/mbb_historical_tournament_games.csv"
-        in: "{{outputs.list-files.uris}}"
-    then:
+    condition: "{{inputs.table == 'mbb_historical_tournament_games'}}"
+    then:   
       - id: bq_ncaa_tournament_games_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_tournament_games`
-          (
+            (
               season INTEGER OPTIONS (description = 'The season of the tournament'),
               round INTEGER OPTIONS (description = 'The round number of the tournament'),
               days_from_epoch INTEGER OPTIONS (description = 'Days since the Unix epoch for the game date'),
@@ -194,20 +184,17 @@ tasks:
               lose_pts INTEGER OPTIONS (description = 'Points scored by the losing team'),
               num_ot INTEGER OPTIONS (description = 'Number of overtime periods'),
               academic_year INTEGER OPTIONS (description = 'The academic year of the tournament')
-          )
+            ) 
 
-  - id: if_ncaa_play_by_play_create_table
+  - id: if_mbb_pbp_sr
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_pbp_sr/mbb_pbp_sr.csv"
-        in: "{{outputs.list-files.uris}}"
-    then:
+    condition: "{{inputs.table == 'mbb_pbp_sr'}}"
+    then: 
       - id: bq_ncaa_play_by_play_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_play_by_play`
-          (
+          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_play_by_play`
+            (
               game_id STRING OPTIONS (description = 'Unique identifier for the game'),
               load_timestamp TIMESTAMP OPTIONS (description = 'Timestamp when the data was loaded'),
               season INTEGER OPTIONS (description = 'The season of the game'),
@@ -279,22 +266,19 @@ tasks:
               turnover_type STRING OPTIONS (description = 'Type of turnover (if applicable)'),
               rebound_type STRING OPTIONS (description = 'Type of rebound (if applicable)'),
               timeout_duration FLOAT OPTIONS (description = 'Duration of the timeout (if applicable)')
-          )
-          PARTITION BY DATE(scheduled_date) 
-          CLUSTER BY game_id, team_id
+            )
+            PARTITION BY DATE(scheduled_date) 
+            CLUSTER BY game_id, team_id
 
-  - id: if_ncaa_player_game_stats_create_table
+  - id: if_mbb_players_games_sr
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_players_games_sr/mbb_players_games_sr.csv"
-        in: "{{outputs.list-files.uris}}"
+    condition: "{{inputs.table == 'mbb_players_games_sr'}}"
     then:
       - id: bq_ncaa_player_game_stats_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_game_stats`
-          (
+            (
               game_id STRING OPTIONS (description = 'Unique identifier for the game'),
               season INTEGER OPTIONS (description = 'The season of the game'),
               neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
@@ -361,22 +345,19 @@ tasks:
               flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls'),
               points INTEGER OPTIONS (description = 'Total points scored by the player'),
               sp_created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created (likely by the data provider)')
-          )
-          PARTITION BY DATE(scheduled_date)
-          CLUSTER BY team_id, player_id;
+            )
+            PARTITION BY DATE(scheduled_date)
+            CLUSTER BY team_id, player_id;
 
-  - id: if_ncaa_team_game_stats_create_table
+  - id: if_mbb_teams_games_sr
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams_games_sr/mbb_teams_games_sr.csv"
-        in: "{{outputs.list-files.uris}}"
+    condition: "{{inputs.table == 'mbb_teams_games_sr'}}"
     then:
       - id: bq_ncaa_team_game_stats_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_game_stats`
-          (
+            (
               game_id STRING OPTIONS (description = 'Unique identifier for the game'),
               season INTEGER OPTIONS (description = 'The season of the game'),
               status STRING OPTIONS (description = 'Status of the game'),
@@ -509,45 +490,71 @@ tasks:
               opp_team_tech_fouls INTEGER OPTIONS (description = 'Number of opponent team technical fouls'),
               opp_coach_tech_fouls INTEGER OPTIONS (description = 'Number of opponent coach technical fouls'),
               created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created')
-          )
-          PARTITION BY DATE(scheduled_date)
-          CLUSTER BY game_id, team_id;
+              )
+              PARTITION BY DATE(scheduled_date)
+              CLUSTER BY game_id, team_id;
 
-  - id: if_ncaa_team_colors_alt_create_table
+  - id: if_mbb_teams
     type: io.kestra.plugin.core.flow.If
-    condition: 
-      - type: io.kestra.core.models.conditions.types.ContainsCondition
-        value: "gs://{{kv('GCP_BUCKET_NAME')}}/team_colors/team_colors.csv"
-        in: "{{outputs.list-files.uris}}"
+    condition: "{{inputs.table == 'mbb_teams'}}"
     then:
-      - id: bq_ncaa_team_colors_alt_create_table
+      - id: bq_create_mbb_teams_create_table
+        type: io.kestra.plugin.gcp.bigquery.Query
+        sql: |
+          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams`
+          (
+            market STRING OPTIONS (description = 'Market of the team'),
+            alias STRING OPTIONS (description = 'Alias of the team'),
+            name STRING OPTIONS (description = 'Name of the team'),
+            id STRING OPTIONS (description = 'Unique ID of the team'),
+            code_ncaa INTEGER OPTIONS (description = 'NCAA code of the team'),
+            kaggle_team_id INTEGER OPTIONS (description = 'Kaggle ID of the team'),
+            school_ncaa STRING OPTIONS (description = 'NCAA school name of the team'),
+            turner_name STRING OPTIONS (description = 'Turner name of the team'),
+            league_name STRING OPTIONS (description = 'Name of the league'),
+            league_alias STRING OPTIONS (description = 'Alias of the league'),
+            league_id STRING OPTIONS (description = 'Unique ID of the league'),
+            conf_name STRING OPTIONS (description = 'Name of the conference'),
+            conf_alias STRING OPTIONS (description = 'Alias of the conference'),
+            conf_id STRING OPTIONS (description = 'Unique ID of the conference'),
+            division_name STRING OPTIONS (description = 'Name of the division'),
+            division_alias STRING OPTIONS (description = 'Alias of the division'),
+            division_id STRING OPTIONS (description = 'Unique ID of the division'),
+            venue_id STRING OPTIONS (description = 'Unique ID of the venue'),
+            venue_city STRING OPTIONS (description = 'City of the venue'),
+            venue_state STRING OPTIONS (description = 'State of the venue'),
+            venue_address STRING OPTIONS (description = 'Address of the venue'),
+            venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
+            venue_country STRING OPTIONS (description = 'Country of the venue'),
+            venue_name STRING OPTIONS (description = 'Name of the venue'),
+            venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
+            logo_large STRING OPTIONS (description = 'Large logo URL of the team'),
+            logo_medium STRING OPTIONS (description = 'Medium logo URL of the team'),
+            logo_small STRING OPTIONS (description = 'Small logo URL of the team')
+          )
+
+  - id: if_team_colors
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{inputs.table == 'team_colors'}}"
+    then:
+      - id: bq_ncaa_team_colors_create_table
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt`
-          (
+            (
               market STRING OPTIONS (description = 'Market of the team'),
               id STRING OPTIONS (description = 'Unique ID for the team'),
               code_ncaa INTEGER OPTIONS (description = 'NCAA code for the team'),
               color STRING OPTIONS (description = 'Color of the team')
-          )
-
-  - id: load_to_bigquery
-    type: io.kestra.plugin.gcp.bigquery.Load
-    projectId: "{{kv('GCP_PROJECT')}}"
-    dataset: "{{kv('GCP_DATASET')}}"
-    table: "{{inputs.table}}"
-    sourceUris: "{{outputs.list_files.uris}}"
-    format: CSV
-    autodetect: true
-    skipLeadingRows: 1
-    writeDisposition: WRITE_TRUNCATE
-
-pluginDefaults:
-  - type: io.kestra.plugin.gcp
-    values:
-      projectId: "{{kv('GCP_PROJECT_ID')}}"
-      location: "{{kv('GCP_LOCATION')}}"
-      bucket: "{{kv('GCP_BUCKET_NAME')}}"
+            )
+      - id: load_to_bigquery
+        type: io.kestra.plugin.gcp.bigquery.Load
+        from: "gs://{{kv('GCP_BUCKET_NAME')}}/{{inputs.table}}/{{inputs_table}}_part_*.csv"
+        format: CSV
+        csvOptions:
+          allowJaggedRows: true
+          allowQuotedNewlines: true
+        destinationTable: "{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt"
 
 triggers:
   - id: trigger_mascots

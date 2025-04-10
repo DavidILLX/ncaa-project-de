@@ -1,5 +1,5 @@
-project-deid: export
-namespace: py_script
+id: bq_to_gcs
+namespace: ncaa_project
 
 tasks:
   - id: run_py
