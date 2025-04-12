@@ -1,0 +1,42 @@
+id: load_csv_to_bq
+namespace: ncaa_project
+
+inputs:
+  - id: uri
+    type: STRING
+    description: "URI for GCS bucket with ZIP file with CSV data."
+    required: true
+
+  - id: destination_table
+    type: STRING
+    description: "Name of the destination table"
+    required: true
+
+
+tasks:
+  - id: download_zip
+    type: io.kestra.plugin.gcp.gcs.Download
+    from: "{{inputs.uri}}"
+    serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+
+  - id: unzip_data
+    type: io.kestra.plugin.compress.ArchiveDecompress
+    algorithm: ZIP
+    from: "{{outputs.download_zip.uri}}"
+
+  - id: load_csv_files
+    type: io.kestra.plugin.core.flow.ForEach
+    values: "{{outputs.unzip_data.files.values()}}"
+    concurrencyLimit: 1
+    tasks:
+      - id: load_single_csv
+        type: io.kestra.plugin.gcp.bigquery.Load
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+        from: "{{taskrun.value}}"
+        format: CSV
+        csvOptions:
+          fieldDelimiter: ","
+          skipLeadingRows: 1
+        destinationTable: "{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.{{inputs.destination_table}}"
+        writeDisposition: WRITE_APPEND
+        createDisposition: CREATE_NEVER

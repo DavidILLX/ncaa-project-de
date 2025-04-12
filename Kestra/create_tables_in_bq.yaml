@@ -1,6 +1,7 @@
 id: tables_in_bq
 namespace: ncaa_project
 description: Creating tables with schema and structure in BigQuery based on csv files in google could storage buckets.
+
 inputs:
 - id: table
   type: SELECT
@@ -13,6 +14,9 @@ inputs:
   defaults: mascots
   allowCustomValue: false
 
+- id: value_date
+  type: STRING
+
 pluginDefaults:
   - type: io.kestra.plugin.gcp
     values:
@@ -20,22 +24,23 @@ pluginDefaults:
       location: "{{kv('GCP_LOCATION')}}"
       bucket: "{{kv('GCP_BUCKET_NAME')}}"
 
+variables:
+  file: "{{inputs.table}}_{{inputs.value_date}}.zip"
+  gcs_file: "gs://{{kv('GCP_BUCKET_NAME')}}/{{inputs.table}}/{{render(vars.file)}}"
+
 tasks:
   - id: set_label
     type: io.kestra.plugin.core.execution.Labels
-    labels: 
+    labels:
+      file: "{{render(vars.file)}}"
       table: "{{inputs.table}}"
-
-  - id: list
-    type: io.kestra.plugin.gcp.gcs.List
-    from: "gs://{{kv('GCP_BUCKET_NAME')}}/"
-    projectId: "{{kv('GCP_PROJECT_ID')}}"
 
   - id: if_mascots
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mascots'}}"
     then:
       - id: bq_mascots_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_mascots`
@@ -57,11 +62,20 @@ tasks:
               tax_domain STRING OPTIONS (description = 'Taxonomic Domain'),
               non_tax_type STRING OPTIONS (description = 'Non-Taxonomic Type')
             )
+      - id: load_mascots_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_mascots"
+
   - id: if_mbb_games_sr
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_games_sr'}}"
     then:
       - id: bq_ncaa_teams_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams_info`
@@ -95,11 +109,20 @@ tasks:
               logo_medium STRING OPTIONS (description = 'URL for the medium logo'),
               logo_small STRING OPTIONS (description = 'URL for the small logo')
             ) 
+      - id: load_ncaa_teams_info_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_teams_info"
+
   - id: if_mbb_historical_teams_games
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_historical_teams_games'}}"
     then:
       - id: bq_ncaa_historic_teams_games_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historic_teams_games`
@@ -125,12 +148,20 @@ tasks:
             )
             PARTITION BY INTEGER(season)
             CLUSTER BY CAST(DATE(scheduled_date));
+      - id: load_ncaa_historic_teams_games_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_historic_teams_games"
 
   - id: if_mbb_historical_teams_seasons
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_historical_teams_seasons'}}"
     then:    
       - id: bq_ncaa_historical_teams_seasons_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_teams_seasons`
@@ -147,12 +178,20 @@ tasks:
               strength_of_schedule FLOAT OPTIONS (description = 'Strength of schedule rating'),
               simple_rating_system FLOAT OPTIONS (description = 'Simple Rating System score')
             )
+      - id: load_ncaa_historical_teams_seasons_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_historical_teams_seasons"
 
   - id: if_mbb_historical_tournament_games
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_historical_tournament_games'}}"
     then:   
       - id: bq_ncaa_tournament_games_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_tournament_games`
@@ -185,12 +224,20 @@ tasks:
               num_ot INTEGER OPTIONS (description = 'Number of overtime periods'),
               academic_year INTEGER OPTIONS (description = 'The academic year of the tournament')
             ) 
+      - id: load_ncaa_historical_tournament_games_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_historical_tournament_games"
 
   - id: if_mbb_pbp_sr
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_pbp_sr'}}"
     then: 
       - id: bq_ncaa_play_by_play_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_play_by_play`
@@ -269,12 +316,20 @@ tasks:
             )
             PARTITION BY DATE(scheduled_date) 
             CLUSTER BY game_id, team_id
+      - id: load_ncaa_player_play_by_play_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_player_play_by_play"
 
   - id: if_mbb_players_games_sr
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_players_games_sr'}}"
     then:
       - id: bq_ncaa_player_game_stats_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_game_stats`
@@ -348,12 +403,20 @@ tasks:
             )
             PARTITION BY DATE(scheduled_date)
             CLUSTER BY team_id, player_id;
+      - id: load_ncaa_player_game_stats_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_player_game_stats"
 
   - id: if_mbb_teams_games_sr
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_teams_games_sr'}}"
     then:
       - id: bq_ncaa_team_game_stats_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_game_stats`
@@ -493,12 +556,20 @@ tasks:
               )
               PARTITION BY DATE(scheduled_date)
               CLUSTER BY game_id, team_id;
+      - id: load_ncaa_team_game_stats_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_team_game_stats"
 
   - id: if_mbb_teams
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'mbb_teams'}}"
     then:
       - id: bq_create_mbb_teams_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams`
@@ -532,12 +603,20 @@ tasks:
             logo_medium STRING OPTIONS (description = 'Medium logo URL of the team'),
             logo_small STRING OPTIONS (description = 'Small logo URL of the team')
           )
+      - id: load_ncaa_teams_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_teams"
 
   - id: if_team_colors
     type: io.kestra.plugin.core.flow.If
     condition: "{{inputs.table == 'team_colors'}}"
     then:
       - id: bq_ncaa_team_colors_create_table
+        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
         type: io.kestra.plugin.gcp.bigquery.Query
         sql: |
           CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt`
@@ -547,72 +626,22 @@ tasks:
               code_ncaa INTEGER OPTIONS (description = 'NCAA code for the team'),
               color STRING OPTIONS (description = 'Color of the team')
             )
-      - id: load_to_bigquery
-        type: io.kestra.plugin.gcp.bigquery.Load
-        from: "gs://{{kv('GCP_BUCKET_NAME')}}/{{inputs.table}}/{{inputs_table}}_part_*.csv"
-        format: CSV
-        csvOptions:
-          allowJaggedRows: true
-          allowQuotedNewlines: true
-        destinationTable: "{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt"
+      - id: load_ncaa_team_colors_alt_data
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: load_csv_to_bq
+        namespace: ncaa_project
+        inputs:
+          uri: "{{render(vars.gcs_file)}}"
+          destination_table: "ncaa_team_colors_alt"        
 
 triggers:
-  - id: trigger_mascots
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 0 * * 1"
+  - id: dependancy_on_gcs
+    type: io.kestra.plugin.core.trigger.Flow
     inputs:
-      table: "mascots"
-
-  - id: trigger_mbb_games_sr
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "30 0 * * 1"
-    inputs:
-      table: "mbb_games_sr"
-
-  - id: trigger_mbb_historical_teams_games
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 1 * * 1"
-    inputs:
-      table: "mbb_historical_teams_games"
-
-  - id: trigger_mbb_historical_teams_seasons
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "30 1 * * 1"
-    inputs:
-      table: "mbb_historical_teams_seasons"
-
-  - id: trigger_mbb_historical_tournament_games
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 2 * * 1"
-    inputs:
-      table: "mbb_historical_tournament_games"
-
-  - id: trigger_mbb_pbp_sr
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "30 2 * * 1"
-    inputs:
-      table: "mbb_pbp_sr"
-
-  - id: trigger_mbb_players_games_sr
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 3 * * 1"
-    inputs:
-      table: "mbb_players_games_sr"
-
-  - id: trigger_mbb_teams
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "30 3 * * 1"
-    inputs:
-      table: "mbb_teams"
-
-  - id: trigger_mbb_teams_games_sr
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 4 * * 1"
-    inputs:
-      table: "mbb_teams_games_sr"
-
-  - id: trigger_team_colors
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "30 4 * * 1"
-    inputs:
-      table: "team_colors"
+      value_date: "{{trigger.outputs.pass_date}}"
+    preconditions:
+      id: flow_trigger
+      flows:
+        - namespace: ncaa_project
+          flowId: bq_to_gcs
+          states: [SUCCESS]

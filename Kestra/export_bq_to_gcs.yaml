@@ -32,7 +32,7 @@ tasks:
       credentials = service_account.Credentials.from_service_account_file(credentials_path)
 
       # TO DO add your projec id here
-      project_id = "ncaa-project-455709"
+      project_id = "{{kv('GCP_PROJECT_ID')}}"
 
       client = bigquery.Client(credentials=credentials, project=project_id)
       storage_client = storage.Client(credentials=credentials, project=project_id)
@@ -47,9 +47,9 @@ tasks:
       print(f"Found {len(tables)} tables in {project_id}.{dataset_id}")
 
       # Should be - ncaa-bucket-dump
-      bucket_name = "ncaa-bucket-dump"
+      bucket_name = "{{kv('GCP_BUCKET_NAME')}}"
       bucket = storage_client.get_bucket(bucket_name)
-
+      trigger_date = "{{trigger.date | date('dd-MM-yyyy')}}"
       # Runnning Query for each table and saving their parts in csv bucket
       for table in tables:
 
@@ -60,22 +60,25 @@ tasks:
                                   FROM `{project_id}.{dataset_id}.{table_name}`
                                   """)
           df = query_job.to_dataframe()
-
-          chunk_size = 2000000
-          num_chunks = math.ceil(len(df) / chunk_size)
+          
           print(f"table found: {table_name}")
 
-          for i in range(num_chunks):
-              df_chunk = df.iloc[i*chunk_size:(i+1)*chunk_size]
+          csv_buffer = io.BytesIO()
+          # Write to Buffer
+          compression_opts = dict(method="zip", archive_name=f"{table_name}_{trigger_date}.csv")
+          df.to_csv(csv_buffer, index=False, compression=compression_opts)
+          # Go to the start of the buffer and load to bucket
+          csv_buffer.seek(0)  
+          blob = bucket.blob(f"{table_name}/{table_name}_{trigger_date}.zip")
+          blob.upload_from_file(csv_buffer)
+          print(f"saved as {table_name}/{table_name}_{trigger_date}.zip")
 
-              csv_buffer = io.BytesIO()
+triggers:
+  - id: csv_schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 3 * * 1"
 
-              # Write to Buffer
-              compression_opts = dict(method="zip", archive_name=f"{table_name}_part_{i+1}.csv")
-              df_chunk.to_csv(csv_buffer, index=True, compression=compression_opts)
-
-              # Go to the start of the buffer and load to bucket
-              csv_buffer.seek(0)  
-              blob = bucket.blob(f"{table_name}/{table_name}_part_{i+1}.zip")
-              blob.upload_from_file(csv_buffer)
-              print(f"saved as {table_name}/{table_name}_part_{i+1}.zip")
+outputs:
+  - id: pass_date
+    type: STRING
+    value: "{{trigger.date | date('dd-MM-yyyy')}}"
