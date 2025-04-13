@@ -4,14 +4,11 @@ namespace: ncaa_project
 inputs:
   - id: uri
     type: STRING
-    description: "URI for GCS bucket with ZIP file with CSV data."
     required: true
 
   - id: destination_table
     type: STRING
-    description: "Name of the destination table"
     required: true
-
 
 tasks:
   - id: download_zip

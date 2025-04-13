@@ -172,7 +172,7 @@ resource "google_sql_user" "db_user" {
   password    = var.kestra_db_pwd
 }
 
-resource "google_dataproc_cluster" "default" {
+/*resource "google_dataproc_cluster" "default" {
   project = var.project
   region  = var.region
   name    = var.cluster_name
@@ -202,4 +202,4 @@ resource "google_dataproc_cluster" "default" {
     google_storage_bucket_iam_member.staging_bucket_admin,
     google_storage_bucket_iam_member.temp_bucket_admin,
   ]
-}
+}*/

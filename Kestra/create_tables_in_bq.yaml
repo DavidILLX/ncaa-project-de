@@ -1,638 +1,751 @@
-id: tables_in_bq
+id: tables_in_bq_alt
 namespace: ncaa_project
 description: Creating tables with schema and structure in BigQuery based on csv files in google could storage buckets.
-
-inputs:
-- id: table
-  type: SELECT
-  displayName: Select which table to load to dataset on BigQuery
-  values: [
-          "mascots", "mbb_games_sr", "mbb_historical_teams_games", "mbb_historical_teams_seasons", 
-          "mbb_historical_tournament_games", "mbb_pbp_sr", "mbb_players_games_sr", "mbb_teams", 
-          "mbb_teams_games_sr", "team_colors"
-          ]
-  defaults: mascots
-  allowCustomValue: false
-
-- id: value_date
-  type: STRING
 
 pluginDefaults:
   - type: io.kestra.plugin.gcp
     values:
       projectId: "{{kv('GCP_PROJECT_ID')}}"
-      location: "{{kv('GCP_LOCATION')}}"
       bucket: "{{kv('GCP_BUCKET_NAME')}}"
 
+inputs:
+  - id: value_date
+    type: STRING     
+
 variables:
-  file: "{{inputs.table}}_{{inputs.value_date}}.zip"
-  gcs_file: "gs://{{kv('GCP_BUCKET_NAME')}}/{{inputs.table}}/{{render(vars.file)}}"
+  all_tables:
+    - "mascots"
+    - "mbb_games_sr"
+    - "mbb_historical_teams_games"
+    - "mbb_historical_teams_seasons"
+    - "mbb_historical_tournament_games"
+    - "mbb_pbp_sr"
+    - "mbb_players_games_sr"
+    - "mbb_teams"
+    - "mbb_teams_games_sr"
+    - "team_colors"
+  value_date: "{{inputs.value_date}}"
 
 tasks:
-  - id: set_label
-    type: io.kestra.plugin.core.execution.Labels
-    labels:
-      file: "{{render(vars.file)}}"
-      table: "{{inputs.table}}"
+  - id: iterate_tables
+    type: io.kestra.plugin.core.flow.ForEach
+    values: "{{vars.all_tables}}"
+    concurrencyLimit: 1
+    tasks:
+      - id: if_mascots
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mascots'}}"
+        then:
+          - id: bq_mascots_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_mascots`
+                (
+                  id STRING OPTIONS (description = 'Unique ID'),
+                  market STRING OPTIONS (description = 'Market'),
+                  name STRING OPTIONS (description = 'Name'),
+                  mascot STRING OPTIONS (description = 'Mascot'),
+                  mascot_name STRING OPTIONS (description = 'Mascot Name'),
+                  mascot_common_name STRING OPTIONS (description = 'Common Name of the Mascot'),
+                  tax_subspecies STRING OPTIONS (description = 'Taxonomic Subspecies'),
+                  tax_species STRING OPTIONS (description = 'Taxonomic Species'),
+                  tax_genus STRING OPTIONS (description = 'Taxonomic Genus'),
+                  tax_family STRING OPTIONS (description = 'Taxonomic Family'),
+                  tax_order STRING OPTIONS (description = 'Taxonomic Order'),
+                  tax_class STRING OPTIONS (description = 'Taxonomic Class'),
+                  tax_phylum STRING OPTIONS (description = 'Taxonomic Phylum'),
+                  tax_kingdom STRING OPTIONS (description = 'Taxonomic Kingdom'),
+                  tax_domain STRING OPTIONS (description = 'Taxonomic Domain'),
+                  non_tax_type STRING OPTIONS (description = 'Non-Taxonomic Type')
+                )
 
-  - id: if_mascots
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mascots'}}"
-    then:
-      - id: bq_mascots_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_mascots`
-            (
-              id STRING OPTIONS (description = 'Unique ID'),
-              market STRING OPTIONS (description = 'Market'),
-              name STRING OPTIONS (description = 'Name'),
-              mascot STRING OPTIONS (description = 'Mascot'),
-              mascot_name STRING OPTIONS (description = 'Mascot Name'),
-              mascot_common_name STRING OPTIONS (description = 'Common Name of the Mascot'),
-              tax_subspecies STRING OPTIONS (description = 'Taxonomic Subspecies'),
-              tax_species STRING OPTIONS (description = 'Taxonomic Species'),
-              tax_genus STRING OPTIONS (description = 'Taxonomic Genus'),
-              tax_family STRING OPTIONS (description = 'Taxonomic Family'),
-              tax_order STRING OPTIONS (description = 'Taxonomic Order'),
-              tax_class STRING OPTIONS (description = 'Taxonomic Class'),
-              tax_phylum STRING OPTIONS (description = 'Taxonomic Phylum'),
-              tax_kingdom STRING OPTIONS (description = 'Taxonomic Kingdom'),
-              tax_domain STRING OPTIONS (description = 'Taxonomic Domain'),
-              non_tax_type STRING OPTIONS (description = 'Non-Taxonomic Type')
-            )
-      - id: load_mascots_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_mascots"
+          - id: load_mascots_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mascots/mascots_{{ inputs.value_date }}.zip"
+              destination_table: "ncaa_mascots"
 
-  - id: if_mbb_games_sr
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_games_sr'}}"
-    then:
-      - id: bq_ncaa_teams_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams_info`
-            (
-              market STRING OPTIONS (description = 'Market of the team'),
-              alias STRING OPTIONS (description = 'Alias of the team'),
-              name STRING OPTIONS (description = 'Name of the team'),
-              id STRING OPTIONS (description = 'Unique ID for the team'),
-              code_ncaa INTEGER OPTIONS (description = 'NCAA code for the team'),
-              kaggle_team_id INTEGER OPTIONS (description = 'Kaggle team ID'),
-              school_ncaa STRING OPTIONS (description = 'NCAA school name'),
-              turner_name STRING OPTIONS (description = 'Turner name for the team'),
-              league_name STRING OPTIONS (description = 'Name of the league'),
-              league_alias STRING OPTIONS (description = 'Alias of the league'),
-              league_id STRING OPTIONS (description = 'ID of the league'),
-              conf_name STRING OPTIONS (description = 'Name of the conference'),
-              conf_alias STRING OPTIONS (description = 'Alias of the conference'),
-              conf_id STRING OPTIONS (description = 'ID of the conference'),
-              division_name STRING OPTIONS (description = 'Name of the division'),
-              division_alias STRING OPTIONS (description = 'Alias of the division'),
-              division_id STRING OPTIONS (description = 'ID of the division'),
-              venue_id STRING OPTIONS (description = 'ID of the venue'),
-              venue_city STRING OPTIONS (description = 'City of the venue'),
-              venue_state STRING OPTIONS (description = 'State of the venue'),
-              venue_address STRING OPTIONS (description = 'Address of the venue'),
-              venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
-              venue_country STRING OPTIONS (description = 'Country of the venue'),
-              venue_name STRING OPTIONS (description = 'Name of the venue'),
-              venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
-              logo_large STRING OPTIONS (description = 'URL for the large logo'),
-              logo_medium STRING OPTIONS (description = 'URL for the medium logo'),
-              logo_small STRING OPTIONS (description = 'URL for the small logo')
-            ) 
-      - id: load_ncaa_teams_info_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_teams_info"
-
-  - id: if_mbb_historical_teams_games
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_historical_teams_games'}}"
-    then:
-      - id: bq_ncaa_historic_teams_games_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historic_teams_games`
-            (
-              season INTEGER OPTIONS (description = 'The season of the game'),
-              scheduled_date STRING OPTIONS (description = 'The scheduled date of the game (as a string)'),
-              attendance FLOAT OPTIONS (description = 'The attendance at the game'),
-              market STRING OPTIONS (description = 'The market of the team'),
-              name STRING OPTIONS (description = 'The name of the team'),
-              team_code STRING OPTIONS (description = 'The code of the team'),
-              team_id STRING OPTIONS (description = 'The ID of the team'),
-              alias STRING OPTIONS (description = 'The alias of the team'),
-              current_division STRING OPTIONS (description = 'The current division of the team'),
-              points_game INTEGER OPTIONS (description = 'The points scored by the team in the game'),
-              win BOOLEAN OPTIONS (description = 'Indicates if the team won the game'),
-              opp_market STRING OPTIONS (description = 'The market of the opponent'),
-              opp_name STRING OPTIONS (description = 'The name of the opponent'),
-              opp_code INTEGER OPTIONS (description = 'The code of the opponent'),
-              opp_id STRING OPTIONS (description = 'The ID of the opponent'),
-              opp_alias STRING OPTIONS (description = 'The alias of the opponent'),
-              opp_current_division STRING OPTIONS (description = 'The current division of the opponent'),
-              opp_points_game INTEGER OPTIONS (description = 'The points scored by the opponent in the game')
-            )
-            PARTITION BY INTEGER(season)
-            CLUSTER BY CAST(DATE(scheduled_date));
-      - id: load_ncaa_historic_teams_games_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_historic_teams_games"
-
-  - id: if_mbb_historical_teams_seasons
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_historical_teams_seasons'}}"
-    then:    
-      - id: bq_ncaa_historical_teams_seasons_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_teams_seasons`
-            (
-              team_id STRING OPTIONS (description = 'Unique ID for the team'),
-              season INTEGER OPTIONS (description = 'The season year'),
-              team_name STRING OPTIONS (description = 'Name of the team'),
-              games INTEGER OPTIONS (description = 'Number of games played'),
-              wins INTEGER OPTIONS (description = 'Number of wins'),
-              losses INTEGER OPTIONS (description = 'Number of losses'),
-              win_pct FLOAT OPTIONS (description = 'Win percentage'),
-              points_for INTEGER OPTIONS (description = 'Total points scored by the team'),
-              points_against INTEGER OPTIONS (description = 'Total points scored against the team'),
-              strength_of_schedule FLOAT OPTIONS (description = 'Strength of schedule rating'),
-              simple_rating_system FLOAT OPTIONS (description = 'Simple Rating System score')
-            )
-      - id: load_ncaa_historical_teams_seasons_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_historical_teams_seasons"
-
-  - id: if_mbb_historical_tournament_games
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_historical_tournament_games'}}"
-    then:   
-      - id: bq_ncaa_tournament_games_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_tournament_games`
-            (
-              season INTEGER OPTIONS (description = 'The season of the tournament'),
-              round INTEGER OPTIONS (description = 'The round number of the tournament'),
-              days_from_epoch INTEGER OPTIONS (description = 'Days since the Unix epoch for the game date'),
-              game_date DATE OPTIONS (description = 'The date of the game'),
-              day STRING OPTIONS (description = 'The day of the week the game was played'),
-              win_seed STRING OPTIONS (description = 'Seed of the winning team'),
-              win_region STRING OPTIONS (description = 'Region of the winning team'),
-              win_market STRING OPTIONS (description = 'Market of the winning team'),
-              win_name STRING OPTIONS (description = 'Name of the winning team'),
-              win_alias STRING OPTIONS (description = 'Alias of the winning team'),
-              win_team_id STRING OPTIONS (description = 'ID of the winning team'),
-              win_school_ncaa STRING OPTIONS (description = 'NCAA school name of the winning team'),
-              win_code_ncaa INTEGER OPTIONS (description = 'NCAA code of the winning team'),
-              win_kaggle_team_id INTEGER OPTIONS (description = 'Kaggle team ID of the winning team'),
-              win_pts INTEGER OPTIONS (description = 'Points scored by the winning team'),
-              lose_seed STRING OPTIONS (description = 'Seed of the losing team'),
-              lose_region STRING OPTIONS (description = 'Region of the losing team'),
-              lose_market STRING OPTIONS (description = 'Market of the losing team'),
-              lose_name STRING OPTIONS (description = 'Name of the losing team'),
-              lose_alias STRING OPTIONS (description = 'Alias of the losing team'),
-              lose_team_id STRING OPTIONS (description = 'ID of the losing team'),
-              lose_school_ncaa STRING OPTIONS (description = 'NCAA school name of the losing team'),
-              lose_code_ncaa INTEGER OPTIONS (description = 'NCAA code of the losing team'),
-              lose_kaggle_team_id INTEGER OPTIONS (description = 'Kaggle team ID of the losing team'),
-              lose_pts INTEGER OPTIONS (description = 'Points scored by the losing team'),
-              num_ot INTEGER OPTIONS (description = 'Number of overtime periods'),
-              academic_year INTEGER OPTIONS (description = 'The academic year of the tournament')
-            ) 
-      - id: load_ncaa_historical_tournament_games_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_historical_tournament_games"
-
-  - id: if_mbb_pbp_sr
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_pbp_sr'}}"
-    then: 
-      - id: bq_ncaa_play_by_play_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_play_by_play`
-            (
-              game_id STRING OPTIONS (description = 'Unique identifier for the game'),
-              load_timestamp TIMESTAMP OPTIONS (description = 'Timestamp when the data was loaded'),
-              season INTEGER OPTIONS (description = 'The season of the game'),
-              status STRING OPTIONS (description = 'Status of the game'),
-              scheduled_date TIMESTAMP OPTIONS (description = 'Scheduled date and time of the game'),
-              venue_id STRING OPTIONS (description = 'Identifier for the venue'),
-              venue_name STRING OPTIONS (description = 'Name of the venue'),
-              venue_city STRING OPTIONS (description = 'City of the venue'),
-              venue_state STRING OPTIONS (description = 'State of the venue'),
-              venue_address STRING OPTIONS (description = 'Address of the venue'),
-              venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
-              venue_country STRING OPTIONS (description = 'Country of the venue'),
-              venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
-              attendance INTEGER OPTIONS (description = 'Attendance at the game'),
-              neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
-              conference_game BOOLEAN OPTIONS (description = 'Indicates if it was a conference game'),
-              tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
-              tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
-              round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
-              game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
-              away_market STRING OPTIONS (description = 'Market of the away team'),
-              away_name STRING OPTIONS (description = 'Name of the away team'),
-              away_id STRING OPTIONS (description = 'Identifier for the away team'),
-              away_alias STRING OPTIONS (description = 'Alias of the away team'),
-              away_conf_name STRING OPTIONS (description = 'Conference name of the away team'),
-              away_conf_alias STRING OPTIONS (description = 'Conference alias of the away team'),
-              away_division_name STRING OPTIONS (description = 'Division name of the away team'),
-              away_division_alias STRING OPTIONS (description = 'Division alias of the away team'),
-              away_league_name STRING OPTIONS (description = 'League name of the away team'),
-              home_market STRING OPTIONS (description = 'Market of the home team'),
-              home_name STRING OPTIONS (description = 'Name of the home team'),
-              home_id STRING OPTIONS (description = 'Identifier for the home team'),
-              home_alias STRING OPTIONS (description = 'Alias of the home team'),
-              home_conf_name STRING OPTIONS (description = 'Conference name of the home team'),
-              home_conf_alias STRING OPTIONS (description = 'Conference alias of the home team'),
-              home_division_name STRING OPTIONS (description = 'Division name of the home team'),
-              home_division_alias STRING OPTIONS (description = 'Division alias of the home team'),
-              home_league_name STRING OPTIONS (description = 'League name of the home team'),
-              period INTEGER OPTIONS (description = 'Current period of the game'),
-              game_clock STRING OPTIONS (description = 'Time remaining in the current period'),
-              elapsed_time_sec INTEGER OPTIONS (description = 'Elapsed time in seconds'),
-              possession_arrow STRING OPTIONS (description = 'Indicates which team has the possession arrow'),
-              team_name STRING OPTIONS (description = 'Name of the team involved in the event'),
-              team_market STRING OPTIONS (description = 'Market of the team involved in the event'),
-              team_id STRING OPTIONS (description = 'Identifier of the team involved in the event'),
-              team_alias STRING OPTIONS (description = 'Alias of the team involved in the event'),
-              team_conf_name STRING OPTIONS (description = 'Conference name of the team involved in the event'),
-              team_conf_alias STRING OPTIONS (description = 'Conference alias of the team involved in the event'),
-              team_division_name STRING OPTIONS (description = 'Division name of the team involved in the event'),
-              team_division_alias STRING OPTIONS (description = 'Division alias of the team involved in the event'),
-              team_league_name STRING OPTIONS (description = 'League name of the team involved in the event'),
-              team_basket STRING OPTIONS (description = 'Identifier for the basket'),
-              possession_team_id STRING OPTIONS (description = 'Identifier of the team with possession'),
-              player_id STRING OPTIONS (description = 'Identifier for the player involved in the event'),
-              player_full_name STRING OPTIONS (description = 'Full name of the player involved in the event'),
-              jersey_num INTEGER OPTIONS (description = 'Jersey number of the player'),
-              event_id STRING OPTIONS (description = 'Unique identifier for the event'),
-              timestamp TIMESTAMP OPTIONS (description = 'Timestamp of the event'),
-              event_description STRING OPTIONS (description = 'Description of the event'),
-              event_coord_x FLOAT OPTIONS (description = 'X coordinate of the event'),
-              event_coord_y FLOAT OPTIONS (description = 'Y coordinate of the event'),
-              event_type STRING OPTIONS (description = 'Type of the event'),
-              type STRING OPTIONS (description = 'Specific type of the event'),
-              shot_made BOOLEAN OPTIONS (description = 'Indicates if a shot was made'),
-              shot_type STRING OPTIONS (description = 'Type of shot taken'),
-              shot_subtype STRING OPTIONS (description = 'Subtype of shot taken'),
-              three_point_shot BOOLEAN OPTIONS (description = 'Indicates if it was a three-point shot'),
-              points_scored FLOAT OPTIONS (description = 'Points scored in the event'),
-              turnover_type STRING OPTIONS (description = 'Type of turnover (if applicable)'),
-              rebound_type STRING OPTIONS (description = 'Type of rebound (if applicable)'),
-              timeout_duration FLOAT OPTIONS (description = 'Duration of the timeout (if applicable)')
-            )
-            PARTITION BY DATE(scheduled_date) 
-            CLUSTER BY game_id, team_id
-      - id: load_ncaa_player_play_by_play_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_player_play_by_play"
-
-  - id: if_mbb_players_games_sr
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_players_games_sr'}}"
-    then:
-      - id: bq_ncaa_player_game_stats_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_game_stats`
-            (
-              game_id STRING OPTIONS (description = 'Unique identifier for the game'),
-              season INTEGER OPTIONS (description = 'The season of the game'),
-              neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
-              scheduled_date DATE OPTIONS (description = 'The scheduled date of the game'),
-              gametime TIMESTAMP OPTIONS (description = 'The scheduled date and time of the game'),
-              tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
-              tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
-              tournament_round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
-              tournament_game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
-              player_id STRING OPTIONS (description = 'Unique identifier for the player'),
-              last_name STRING OPTIONS (description = 'Last name of the player'),
-              first_name STRING OPTIONS (description = 'First name of the player'),
-              full_name STRING OPTIONS (description = 'Full name of the player'),
-              abbr_name STRING OPTIONS (description = 'Abbreviated name of the player'),
-              status STRING OPTIONS (description = 'Status of the player in the game'),
-              jersey_number INTEGER OPTIONS (description = 'Jersey number of the player'),
-              height INTEGER OPTIONS (description = 'Height of the player (in inches or cm, check data source)'),
-              weight INTEGER OPTIONS (description = 'Weight of the player (in lbs or kg, check data source)'),
-              birth_place STRING OPTIONS (description = 'Birth place of the player'),
-              birthplace_city STRING OPTIONS (description = 'Birth city of the player'),
-              birthplace_state STRING OPTIONS (description = 'Birth state/province of the player'),
-              birthplace_country STRING OPTIONS (description = 'Birth country of the player'),
-              class STRING OPTIONS (description = 'Class/year of the player (e.g., Freshman, Senior)'),
-              team_name STRING OPTIONS (description = 'Name of the team the player played for'),
-              team_market STRING OPTIONS (description = 'Market of the team the player played for'),
-              team_id STRING OPTIONS (description = 'Unique identifier for the team'),
-              team_alias STRING OPTIONS (description = 'Alias of the team'),
-              conf_name STRING OPTIONS (description = 'Conference name of the team'),
-              conf_alias STRING OPTIONS (description = 'Conference alias of the team'),
-              division_name STRING OPTIONS (description = 'Division name of the team'),
-              division_alias STRING OPTIONS (description = 'Division alias of the team'),
-              league_name STRING OPTIONS (description = 'League name of the team'),
-              home_team BOOLEAN OPTIONS (description = 'Indicates if the player\'s team was the home team'),
-              active BOOLEAN OPTIONS (description = 'Indicates if the player was active for the game'),
-              played BOOLEAN OPTIONS (description = 'Indicates if the player played in the game'),
-              starter BOOLEAN OPTIONS (description = 'Indicates if the player was a starter'),
-              minutes STRING OPTIONS (description = 'Minutes played by the player (as a string)'),
-              minutes_int64 INTEGER OPTIONS (description = 'Minutes played by the player (as an integer)'),
-              position STRING OPTIONS (description = 'Position of the player'),
-              primary_position STRING OPTIONS (description = 'Primary position of the player'),
-              field_goals_made INTEGER OPTIONS (description = 'Number of field goals made'),
-              field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted'),
-              field_goals_pct FLOAT OPTIONS (description = 'Field goal percentage'),
-              three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made'),
-              three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted'),
-              three_points_pct FLOAT OPTIONS (description = 'Three-point shot percentage'),
-              two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made'),
-              two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted'),
-              two_points_pct FLOAT OPTIONS (description = 'Two-point shot percentage'),
-              blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked'),
-              free_throws_made INTEGER OPTIONS (description = 'Number of free throws made'),
-              free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted'),
-              free_throws_pct FLOAT OPTIONS (description = 'Free throw percentage'),
-              offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds'),
-              defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds'),
-              rebounds INTEGER OPTIONS (description = 'Total number of rebounds'),
-              assists INTEGER OPTIONS (description = 'Number of assists'),
-              turnovers INTEGER OPTIONS (description = 'Number of turnovers'),
-              steals INTEGER OPTIONS (description = 'Number of steals'),
-              blocks INTEGER OPTIONS (description = 'Number of blocks'),
-              assists_turnover_ratio FLOAT OPTIONS (description = 'Ratio of assists to turnovers'),
-              personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls'),
-              tech_fouls INTEGER OPTIONS (description = 'Number of technical fouls'),
-              flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls'),
-              points INTEGER OPTIONS (description = 'Total points scored by the player'),
-              sp_created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created (likely by the data provider)')
-            )
-            PARTITION BY DATE(scheduled_date)
-            CLUSTER BY team_id, player_id;
-      - id: load_ncaa_player_game_stats_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_player_game_stats"
-
-  - id: if_mbb_teams_games_sr
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_teams_games_sr'}}"
-    then:
-      - id: bq_ncaa_team_game_stats_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_game_stats`
-            (
-              game_id STRING OPTIONS (description = 'Unique identifier for the game'),
-              season INTEGER OPTIONS (description = 'The season of the game'),
-              status STRING OPTIONS (description = 'Status of the game'),
-              coverage STRING OPTIONS (description = 'Coverage of the game'),
-              neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
-              scheduled_date DATE OPTIONS (description = 'The scheduled date of the game'),
-              gametime TIMESTAMP OPTIONS (description = 'The scheduled date and time of the game'),
-              conference_game BOOLEAN OPTIONS (description = 'Indicates if it was a conference game'),
-              tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
-              tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
-              tournament_round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
-              tournament_game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
-              attendance INTEGER OPTIONS (description = 'Attendance at the game'),
-              lead_changes INTEGER OPTIONS (description = 'Number of lead changes in the game'),
-              times_tied INTEGER OPTIONS (description = 'Number of times the score was tied'),
-              periods INTEGER OPTIONS (description = 'Number of periods in the game'),
-              possession_arrow STRING OPTIONS (description = 'Indicates which team had the possession arrow'),
-              venue_id STRING OPTIONS (description = 'Identifier for the venue'),
-              venue_city STRING OPTIONS (description = 'City of the venue'),
-              venue_state STRING OPTIONS (description = 'State of the venue'),
-              venue_address STRING OPTIONS (description = 'Address of the venue'),
-              venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
-              venue_country STRING OPTIONS (description = 'Country of the venue'),
-              venue_name STRING OPTIONS (description = 'Name of the venue'),
-              venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
-              home_team BOOLEAN OPTIONS (description = 'Indicates if this record is for the home team'),
-              name STRING OPTIONS (description = 'Name of the team'),
-              market STRING OPTIONS (description = 'Market of the team'),
-              team_id STRING OPTIONS (description = 'Unique identifier for the team'),
-              alias STRING OPTIONS (description = 'Alias of the team'),
-              league_id STRING OPTIONS (description = 'Identifier for the league'),
-              league_name STRING OPTIONS (description = 'Name of the league'),
-              league_alias STRING OPTIONS (description = 'Alias of the league'),
-              conf_id STRING OPTIONS (description = 'Identifier for the conference'),
-              conf_name STRING OPTIONS (description = 'Name of the conference'),
-              conf_alias STRING OPTIONS (description = 'Alias of the conference'),
-              division_id STRING OPTIONS (description = 'Identifier for the division'),
-              division_name STRING OPTIONS (description = 'Name of the division'),
-              division_alias STRING OPTIONS (description = 'Alias of the division'),
-              logo_large STRING OPTIONS (description = 'URL for the large logo'),
-              logo_medium STRING OPTIONS (description = 'URL for the medium logo'),
-              logo_small STRING OPTIONS (description = 'URL for the small logo'),
-              opp_name STRING OPTIONS (description = 'Name of the opponent team'),
-              opp_market STRING OPTIONS (description = 'Market of the opponent team'),
-              opp_id STRING OPTIONS (description = 'Unique identifier for the opponent team'),
-              opp_alias STRING OPTIONS (description = 'Alias of the opponent team'),
-              opp_league_id STRING OPTIONS (description = 'Identifier for the opponent league'),
-              opp_league_name STRING OPTIONS (description = 'Name of the opponent league'),
-              opp_league_alias STRING OPTIONS (description = 'Alias of the opponent league'),
-              opp_conf_id STRING OPTIONS (description = 'Identifier for the opponent conference'),
-              opp_conf_name STRING OPTIONS (description = 'Name of the opponent conference'),
-              opp_conf_alias STRING OPTIONS (description = 'Alias of the opponent conference'),
-              opp_division_id STRING OPTIONS (description = 'Identifier for the opponent division'),
-              opp_division_name STRING OPTIONS (description = 'Name of the opponent division'),
-              opp_division_alias STRING OPTIONS (description = 'Alias of the opponent division'),
-              opp_logo_large STRING OPTIONS (description = 'URL for the large logo of the opponent'),
-              opp_logo_medium STRING OPTIONS (description = 'URL for the medium logo of the opponent'),
-              opp_logo_small STRING OPTIONS (description = 'URL for the small logo of the opponent'),
-              win BOOLEAN OPTIONS (description = 'Indicates if this team won the game'),
-              points_game INTEGER OPTIONS (description = 'Points scored by this team in the game'),
-              minutes STRING OPTIONS (description = 'Minutes played by this team (may not be applicable)'),
-              field_goals_made INTEGER OPTIONS (description = 'Number of field goals made by this team'),
-              field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted by this team'),
-              field_goals_pct FLOAT OPTIONS (description = 'Field goal percentage of this team'),
-              three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made by this team'),
-              three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted by this team'),
-              three_points_pct FLOAT OPTIONS (description = 'Three-point shot percentage of this team'),
-              two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made by this team'),
-              two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted by this team'),
-              two_points_pct FLOAT OPTIONS (description = 'Two-point shot percentage of this team'),
-              blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked by the opponent'),
-              free_throws_made INTEGER OPTIONS (description = 'Number of free throws made by this team'),
-              free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted by this team'),
-              free_throws_pct FLOAT OPTIONS (description = 'Free throw percentage of this team'),
-              offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds by this team'),
-              defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds by this team'),
-              rebounds INTEGER OPTIONS (description = 'Total rebounds by this team'),
-              assists INTEGER OPTIONS (description = 'Number of assists by this team'),
-              turnovers INTEGER OPTIONS (description = 'Number of turnovers by this team'),
-              steals INTEGER OPTIONS (description = 'Number of steals by this team'),
-              blocks INTEGER OPTIONS (description = 'Number of blocks by this team'),
-              assists_turnover_ratio FLOAT OPTIONS (description = 'Assist to turnover ratio of this team'),
-              personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls committed by this team'),
-              ejections INTEGER OPTIONS (description = 'Number of ejections for this team'),
-              foulouts INTEGER OPTIONS (description = 'Number of players who fouled out on this team'),
-              points INTEGER OPTIONS (description = 'Total points scored by this team'),
-              fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by this team'),
-              second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by this team'),
-              team_turnovers INTEGER OPTIONS (description = 'Team turnovers (may be redundant)'),
-              points_off_turnovers INTEGER OPTIONS (description = 'Points scored off opponent turnovers by this team'),
-              team_rebounds INTEGER OPTIONS (description = 'Team rebounds (may be redundant)'),
-              flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls committed by this team'),
-              player_tech_fouls INTEGER OPTIONS (description = 'Number of player technical fouls committed by this team'),
-              team_tech_fouls INTEGER OPTIONS (description = 'Number of team technical fouls committed by this team'),
-              coach_tech_fouls INTEGER OPTIONS (description = 'Number of coach technical fouls'),
-              opp_points_game INTEGER OPTIONS (description = 'Points scored by the opponent team'),
-              opp_minutes STRING OPTIONS (description = 'Minutes played by the opponent team (may not be applicable)'),
-              opp_field_goals_made INTEGER OPTIONS (description = 'Number of field goals made by the opponent team'),
-              opp_field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted by the opponent team'),
-              opp_field_goals_pct FLOAT OPTIONS (description = 'Field goal percentage of the opponent team'),
-              opp_three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made by the opponent team'),
-              opp_three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted by the opponent team'),
-              opp_three_points_pct FLOAT OPTIONS (description = 'Three-point shot percentage of the opponent team'),
-              opp_two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made by the opponent team'),
-              opp_two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted by the opponent team'),
-              opp_two_points_pct FLOAT OPTIONS (description = 'Two-point shot percentage of the opponent team'),
-              opp_blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked by this team'),
-              opp_free_throws_made INTEGER OPTIONS (description = 'Number of free throws made by the opponent team'),
-              opp_free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted by the opponent team'),
-              opp_free_throws_pct FLOAT OPTIONS (description = 'Free throw percentage of the opponent team'),
-              opp_offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds by the opponent team'),
-              opp_defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds by the opponent team'),
-              opp_rebounds INTEGER OPTIONS (description = 'Total rebounds by the opponent team'),
-              opp_assists INTEGER OPTIONS (description = 'Number of assists by the opponent team'),
-              opp_turnovers INTEGER OPTIONS (description = 'Number of turnovers by the opponent team'),
-              opp_steals INTEGER OPTIONS (description = 'Number of steals by the opponent team'),
-              opp_blocks INTEGER OPTIONS (description = 'Number of blocks by the opponent team'),
-              opp_assists_turnover_ratio FLOAT OPTIONS (description = 'Assist to turnover ratio of the opponent team'),
-              opp_personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls committed by the opponent team'),
-              opp_ejections INTEGER OPTIONS (description = 'Number of ejections for the opponent team'),
-              opp_foulouts INTEGER OPTIONS (description = 'Number of players who fouled out on the opponent team'),
-              opp_points INTEGER OPTIONS (description = 'Total points scored by the opponent team'),
-              opp_fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by the opponent team'),
-              opp_second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by the opponent team'),
-              opp_team_turnovers INTEGER OPTIONS (description = 'Opponent team turnovers (may be redundant)'),
-              opp_points_off_turnovers INTEGER OPTIONS (description = 'Points scored off turnovers by the opponent team'),
-              opp_team_rebounds INTEGER OPTIONS (description = 'Opponent team rebounds (may be redundant)'),
-              opp_flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls committed by the opponent team'),
-              opp_player_tech_fouls INTEGER OPTIONS (description = 'Number of opponent player technical fouls'),
-              opp_team_tech_fouls INTEGER OPTIONS (description = 'Number of opponent team technical fouls'),
-              opp_coach_tech_fouls INTEGER OPTIONS (description = 'Number of opponent coach technical fouls'),
-              created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created')
+      - id: if_mbb_games_sr
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_games_sr'}}"
+        then:
+          - id: bq_ncaa_teams_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams_info`
+                (
+                  game_id STRING OPTIONS (description = 'Unique ID of the game'),
+                  season INTEGER OPTIONS (description = 'Season of the game'),
+                  status STRING OPTIONS (description = 'Status of the game'),
+                  coverage STRING OPTIONS (description = 'Coverage of the game'),
+                  neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
+                  scheduled_date DATE OPTIONS (description = 'Scheduled date of the game'),
+                  gametime TIMESTAMP OPTIONS (description = 'Scheduled time of the game'),
+                  conference_game BOOLEAN OPTIONS (description = 'Indicates if the game was a conference game'),
+                  tournament STRING OPTIONS (description = 'Name of the tournament, if any'),
+                  tournament_type STRING OPTIONS (description = 'Type of the tournament, if any'),
+                  tournament_round STRING OPTIONS (description = 'Round of the tournament, if any'),
+                  tournament_game_no STRING OPTIONS (description = 'Game number within the tournament round, if any'),
+                  attendance INTEGER OPTIONS (description = 'Attendance at the game'),
+                  lead_changes INTEGER OPTIONS (description = 'Number of lead changes in the game'),
+                  times_tied INTEGER OPTIONS (description = 'Number of times the score was tied in the game'),
+                  periods INTEGER OPTIONS (description = 'Number of periods in the game'),
+                  possession_arrow STRING OPTIONS (description = 'Indicator of possession arrow, if applicable'),
+                  venue_id STRING OPTIONS (description = 'Unique ID of the venue'),
+                  venue_city STRING OPTIONS (description = 'City of the venue'),
+                  venue_state STRING OPTIONS (description = 'State of the venue'),
+                  venue_address STRING OPTIONS (description = 'Address of the venue'),
+                  venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
+                  venue_country STRING OPTIONS (description = 'Country of the venue'),
+                  venue_name STRING OPTIONS (description = 'Name of the venue'),
+                  venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
+                  h_name STRING OPTIONS (description = 'Name of the home team'),
+                  h_market STRING OPTIONS (description = 'Market of the home team'),
+                  h_id STRING OPTIONS (description = 'Unique ID of the home team'),
+                  h_alias STRING OPTIONS (description = 'Alias of the home team'),
+                  h_league_id STRING OPTIONS (description = 'Unique ID of the home team\'s league'),
+                  h_league_name STRING OPTIONS (description = 'Name of the home team\'s league'),
+                  h_league_alias STRING OPTIONS (description = 'Alias of the home team\'s league'),
+                  h_conf_id STRING OPTIONS (description = 'Unique ID of the home team\'s conference'),
+                  h_conf_name STRING OPTIONS (description = 'Name of the home team\'s conference'),
+                  h_conf_alias STRING OPTIONS (description = 'Alias of the home team\'s conference'),
+                  h_division_id STRING OPTIONS (description = 'Unique ID of the home team\'s division'),
+                  h_division_name STRING OPTIONS (description = 'Name of the home team\'s division'),
+                  h_division_alias STRING OPTIONS (description = 'Alias of the home team\'s division'),
+                  h_logo_large STRING OPTIONS (description = 'Large logo URL of the home team'),
+                  h_logo_medium STRING OPTIONS (description = 'Medium logo URL of the home team'),
+                  h_logo_small STRING OPTIONS (description = 'Small logo URL of the home team'),
+                  h_points_game INTEGER OPTIONS (description = 'Points scored by the home team in the game'),
+                  h_rank INTEGER OPTIONS (description = 'Rank of the home team, if available'),
+                  h_minutes STRING OPTIONS (description = 'Minutes played by the home team'),
+                  h_field_goals_made INTEGER OPTIONS (description = 'Field goals made by the home team'),
+                  h_field_goals_att INTEGER OPTIONS (description = 'Field goals attempted by the home team'),
+                  h_field_goals_pct FLOAT64 OPTIONS (description = 'Field goal percentage of the home team'),
+                  h_three_points_made INTEGER OPTIONS (description = 'Three-pointers made by the home team'),
+                  h_three_points_att INTEGER OPTIONS (description = 'Three-pointers attempted by the home team'),
+                  h_three_points_pct FLOAT64 OPTIONS (description = 'Three-point percentage of the home team'),
+                  h_two_points_made INTEGER OPTIONS (description = 'Two-pointers made by the home team'),
+                  h_two_points_att INTEGER OPTIONS (description = 'Two-pointers attempted by the home team'),
+                  h_two_points_pct FLOAT64 OPTIONS (description = 'Two-point percentage of the home team'),
+                  h_blocked_att INTEGER OPTIONS (description = 'Shots blocked by the home team'),
+                  h_free_throws_made INTEGER OPTIONS (description = 'Free throws made by the home team'),
+                  h_free_throws_att INTEGER OPTIONS (description = 'Free throws attempted by the home team'),
+                  h_free_throws_pct FLOAT64 OPTIONS (description = 'Free throw percentage of the home team'),
+                  h_offensive_rebounds INTEGER OPTIONS (description = 'Offensive rebounds by the home team'),
+                  h_defensive_rebounds INTEGER OPTIONS (description = 'Defensive rebounds by the home team'),
+                  h_rebounds INTEGER OPTIONS (description = 'Total rebounds by the home team'),
+                  h_assists INTEGER OPTIONS (description = 'Assists by the home team'),
+                  h_turnovers INTEGER OPTIONS (description = 'Turnovers by the home team'),
+                  h_steals INTEGER OPTIONS (description = 'Steals by the home team'),
+                  h_blocks INTEGER OPTIONS (description = 'Blocks by the home team'),
+                  h_assists_turnover_ratio FLOAT64 OPTIONS (description = 'Assist to turnover ratio of the home team'),
+                  h_personal_fouls INTEGER OPTIONS (description = 'Personal fouls by the home team'),
+                  h_ejections INTEGER OPTIONS (description = 'Ejections of home team players/coaches'),
+                  h_foulouts INTEGER OPTIONS (description = 'Foulouts of home team players'),
+                  h_points INTEGER OPTIONS (description = 'Total points scored by the home team'),
+                  h_fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by the home team'),
+                  h_second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by the home team'),
+                  h_team_turnovers INTEGER OPTIONS (description = 'Team turnovers of the home team'),
+                  h_points_off_turnovers INTEGER OPTIONS (description = 'Points scored by the home team off turnovers'),
+                  h_team_rebounds INTEGER OPTIONS (description = 'Team rebounds of the home team'),
+                  h_flagrant_fouls INTEGER OPTIONS (description = 'Flagrant fouls by the home team'),
+                  h_player_tech_fouls INTEGER OPTIONS (description = 'Player technical fouls of the home team'),
+                  h_team_tech_fouls INTEGER OPTIONS (description = 'Team technical fouls of the home team'),
+                  h_coach_tech_fouls INTEGER OPTIONS (description = 'Coach technical fouls of the home team'),
+                  a_name STRING OPTIONS (description = 'Name of the away team'),
+                  a_market STRING OPTIONS (description = 'Market of the away team'),
+                  a_id STRING OPTIONS (description = 'Unique ID of the away team'),
+                  a_alias STRING OPTIONS (description = 'Alias of the away team'),
+                  a_league_id STRING OPTIONS (description = 'Unique ID of the away team\'s league'),
+                  a_league_name STRING OPTIONS (description = 'Name of the away team\'s league'),
+                  a_league_alias STRING OPTIONS (description = 'Alias of the away team\'s league'),
+                  a_conf_id STRING OPTIONS (description = 'Unique ID of the away team\'s conference'),
+                  a_conf_name STRING OPTIONS (description = 'Name of the away team\'s conference'),
+                  a_conf_alias STRING OPTIONS (description = 'Alias of the away team\'s conference'),
+                  a_division_id STRING OPTIONS (description = 'Unique ID of the away team\'s division'),
+                  a_division_name STRING OPTIONS (description = 'Name of the away team\'s division'),
+                  a_division_alias STRING OPTIONS (description = 'Alias of the away team\'s division'),
+                  a_logo_large STRING OPTIONS (description = 'Large logo URL of the away team'),
+                  a_logo_medium STRING OPTIONS (description = 'Medium logo URL of the away team'),
+                  a_logo_small STRING OPTIONS (description = 'Small logo URL of the away team'),
+                  a_points_game INTEGER OPTIONS (description = 'Points scored by the away team in the game'),
+                  a_rank INTEGER OPTIONS (description = 'Rank of the away team, if available'),
+                  a_minutes STRING OPTIONS (description = 'Minutes played by the away team'),
+                  a_field_goals_made INTEGER OPTIONS (description = 'Field goals made by the away team'),
+                  a_field_goals_att INTEGER OPTIONS (description = 'Field goals attempted by the away team'),
+                  a_field_goals_pct FLOAT64 OPTIONS (description = 'Field goal percentage of the away team'),
+                  a_three_points_made INTEGER OPTIONS (description = 'Three-pointers made by the away team'),
+                  a_three_points_att INTEGER OPTIONS (description = 'Three-pointers attempted by the away team'),
+                  a_three_points_pct FLOAT64 OPTIONS (description = 'Three-point percentage of the away team'),
+                  a_two_points_made INTEGER OPTIONS (description = 'Two-pointers made by the away team'),
+                  a_two_points_att INTEGER OPTIONS (description = 'Two-pointers attempted by the away team'),
+                  a_two_points_pct FLOAT64 OPTIONS (description = 'Two-point percentage of the away team'),
+                  a_blocked_att INTEGER OPTIONS (description = 'Shots blocked by the away team'),
+                  a_free_throws_made INTEGER OPTIONS (description = 'Free throws made by the away team'),
+                  a_free_throws_att INTEGER OPTIONS (description = 'Free throws attempted by the away team'),
+                  a_free_throws_pct FLOAT64 OPTIONS (description = 'Free throw percentage of the away team'),
+                  a_offensive_rebounds INTEGER OPTIONS (description = 'Offensive rebounds by the away team'),
+                  a_defensive_rebounds INTEGER OPTIONS (description = 'Defensive rebounds by the away team'),
+                  a_rebounds INTEGER OPTIONS (description = 'Total rebounds by the away team'),
+                  a_assists INTEGER OPTIONS (description = 'Assists by the away team'),
+                  a_turnovers INTEGER OPTIONS (description = 'Turnovers by the away team'),
+                  a_steals INTEGER OPTIONS (description = 'Steals by the away team'),
+                  a_blocks INTEGER OPTIONS (description = 'Blocks by the away team'),
+                  a_assists_turnover_ratio FLOAT64 OPTIONS (description = 'Assist to turnover ratio of the away team'),
+                  a_personal_fouls INTEGER OPTIONS (description = 'Personal fouls by the away team'),
+                  a_ejections INTEGER OPTIONS (description = 'Ejections of away team players/coaches'),
+                  a_foulouts INTEGER OPTIONS (description = 'Foulouts of away team players'),
+                  a_points INTEGER OPTIONS (description = 'Total points scored by the away team'),
+                  a_fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by the away team'),
+                  a_second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by the away team'),
+                  a_team_turnovers INTEGER OPTIONS (description = 'Team turnovers of the away team'),
+                  a_points_off_turnovers INTEGER OPTIONS (description = 'Points scored by the away team off turnovers'),
+                  a_team_rebounds INTEGER OPTIONS (description = 'Team rebounds of the away team'),
+                  a_flagrant_fouls INTEGER OPTIONS (description = 'Flagrant fouls by the away team'),
+                  a_player_tech_fouls INTEGER OPTIONS (description = 'Player technical fouls of the away team'),
+                  a_team_tech_fouls INTEGER OPTIONS (description = 'Team technical fouls of the away team'),
+                  a_coach_tech_fouls INTEGER OPTIONS (description = 'Coach technical fouls of the away team'),
+                  created TIMESTAMP OPTIONS (description = 'Timestamp of record creation')
               )
-              PARTITION BY DATE(scheduled_date)
-              CLUSTER BY game_id, team_id;
-      - id: load_ncaa_team_game_stats_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_team_game_stats"
+              PARTITION BY scheduled_date;
 
-  - id: if_mbb_teams
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'mbb_teams'}}"
-    then:
-      - id: bq_create_mbb_teams_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams`
-          (
-            market STRING OPTIONS (description = 'Market of the team'),
-            alias STRING OPTIONS (description = 'Alias of the team'),
-            name STRING OPTIONS (description = 'Name of the team'),
-            id STRING OPTIONS (description = 'Unique ID of the team'),
-            code_ncaa INTEGER OPTIONS (description = 'NCAA code of the team'),
-            kaggle_team_id INTEGER OPTIONS (description = 'Kaggle ID of the team'),
-            school_ncaa STRING OPTIONS (description = 'NCAA school name of the team'),
-            turner_name STRING OPTIONS (description = 'Turner name of the team'),
-            league_name STRING OPTIONS (description = 'Name of the league'),
-            league_alias STRING OPTIONS (description = 'Alias of the league'),
-            league_id STRING OPTIONS (description = 'Unique ID of the league'),
-            conf_name STRING OPTIONS (description = 'Name of the conference'),
-            conf_alias STRING OPTIONS (description = 'Alias of the conference'),
-            conf_id STRING OPTIONS (description = 'Unique ID of the conference'),
-            division_name STRING OPTIONS (description = 'Name of the division'),
-            division_alias STRING OPTIONS (description = 'Alias of the division'),
-            division_id STRING OPTIONS (description = 'Unique ID of the division'),
-            venue_id STRING OPTIONS (description = 'Unique ID of the venue'),
-            venue_city STRING OPTIONS (description = 'City of the venue'),
-            venue_state STRING OPTIONS (description = 'State of the venue'),
-            venue_address STRING OPTIONS (description = 'Address of the venue'),
-            venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
-            venue_country STRING OPTIONS (description = 'Country of the venue'),
-            venue_name STRING OPTIONS (description = 'Name of the venue'),
-            venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
-            logo_large STRING OPTIONS (description = 'Large logo URL of the team'),
-            logo_medium STRING OPTIONS (description = 'Medium logo URL of the team'),
-            logo_small STRING OPTIONS (description = 'Small logo URL of the team')
-          )
-      - id: load_ncaa_teams_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_teams"
+          - id: load_ncaa_teams_info_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_games_sr/mbb_games_sr_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_teams_info"
 
-  - id: if_team_colors
-    type: io.kestra.plugin.core.flow.If
-    condition: "{{inputs.table == 'team_colors'}}"
-    then:
-      - id: bq_ncaa_team_colors_create_table
-        serviceAccount: "{{kv('GCP_ACCOUNT')}}"
-        type: io.kestra.plugin.gcp.bigquery.Query
-        sql: |
-          CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt`
-            (
-              market STRING OPTIONS (description = 'Market of the team'),
-              id STRING OPTIONS (description = 'Unique ID for the team'),
-              code_ncaa INTEGER OPTIONS (description = 'NCAA code for the team'),
-              color STRING OPTIONS (description = 'Color of the team')
-            )
-      - id: load_ncaa_team_colors_alt_data
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: load_csv_to_bq
-        namespace: ncaa_project
-        inputs:
-          uri: "{{render(vars.gcs_file)}}"
-          destination_table: "ncaa_team_colors_alt"        
+      - id: if_mbb_historical_teams_games
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_historical_teams_games'}}"
+        then:
+          - id: bq_ncaa_historic_teams_games_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historic_teams_games`
+                (
+                  season INTEGER OPTIONS (description = 'The season of the game'),
+                  scheduled_date STRING OPTIONS (description = 'The scheduled date of the game'),
+                  attendance FLOAT64 OPTIONS (description = 'The attendance at the game'),
+                  market STRING OPTIONS (description = 'The market of the team'),
+                  name STRING OPTIONS (description = 'The name of the team'),
+                  team_code STRING OPTIONS (description = 'The code of the team'),
+                  team_id STRING OPTIONS (description = 'The ID of the team'),
+                  alias STRING OPTIONS (description = 'The alias of the team'),
+                  current_division STRING OPTIONS (description = 'The current division of the team'),
+                  points_game INTEGER OPTIONS (description = 'The points scored by the team in the game'),
+                  win BOOLEAN OPTIONS (description = 'Indicates if the team won the game'),
+                  opp_market STRING OPTIONS (description = 'The market of the opponent'),
+                  opp_name STRING OPTIONS (description = 'The name of the opponent'),
+                  opp_code INTEGER OPTIONS (description = 'The code of the opponent'),
+                  opp_id STRING OPTIONS (description = 'The ID of the opponent'),
+                  opp_alias STRING OPTIONS (description = 'The alias of the opponent'),
+                  opp_current_division STRING OPTIONS (description = 'The current division of the opponent'),
+                  opp_points_game INTEGER OPTIONS (description = 'The points scored by the opponent in the game')
+                )
+                CLUSTER BY team_code
+
+          - id: load_ncaa_historic_teams_games_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_games/mbb_historical_teams_games_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_historic_teams_games"
+
+      - id: if_mbb_historical_teams_seasons
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_historical_teams_seasons'}}"
+        then:    
+          - id: bq_ncaa_historical_teams_seasons_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_teams_seasons`
+                (
+                  season INTEGER OPTIONS (description = 'Season'),
+                  market STRING OPTIONS (description = 'Market'),
+                  name STRING OPTIONS (description = 'Name'),
+                  team_code INTEGER OPTIONS (description = 'Team Code'),
+                  team_id STRING OPTIONS (description = 'Team ID'),
+                  alias STRING OPTIONS (description = 'Alias'),
+                  division INTEGER OPTIONS (description = 'Division'),
+                  current_division STRING OPTIONS (description = 'Current Division'),
+                  wins INTEGER OPTIONS (description = 'Number of Wins'),
+                  losses INTEGER OPTIONS (description = 'Number of Losses'),
+                  ties INTEGER OPTIONS (description = 'Number of Ties')
+                )
+                CLUSTER BY team_code
+
+          - id: load_ncaa_historical_teams_seasons_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_seasons/mbb_historical_teams_seasons_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_historical_teams_seasons"
+
+      - id: if_mbb_historical_tournament_games
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_historical_tournament_games'}}"
+        then:   
+          - id: bq_ncaa_tournament_games_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_historical_tournament_games`
+                (
+                  season INTEGER OPTIONS (description = 'The season of the tournament'),
+                  round INTEGER OPTIONS (description = 'The round number of the tournament'),
+                  days_from_epoch INTEGER OPTIONS (description = 'Days since the Unix epoch for the game date'),
+                  game_date DATE OPTIONS (description = 'The date of the game'),
+                  day STRING OPTIONS (description = 'The day of the week the game was played'),
+                  win_seed STRING OPTIONS (description = 'Seed of the winning team'),
+                  win_region STRING OPTIONS (description = 'Region of the winning team'),
+                  win_market STRING OPTIONS (description = 'Market of the winning team'),
+                  win_name STRING OPTIONS (description = 'Name of the winning team'),
+                  win_alias STRING OPTIONS (description = 'Alias of the winning team'),
+                  win_team_id STRING OPTIONS (description = 'ID of the winning team'),
+                  win_school_ncaa STRING OPTIONS (description = 'NCAA school name of the winning team'),
+                  win_code_ncaa INTEGER OPTIONS (description = 'NCAA code of the winning team'),
+                  win_kaggle_team_id INTEGER OPTIONS (description = 'Kaggle team ID of the winning team'),
+                  win_pts INTEGER OPTIONS (description = 'Points scored by the winning team'),
+                  lose_seed STRING OPTIONS (description = 'Seed of the losing team'),
+                  lose_region STRING OPTIONS (description = 'Region of the losing team'),
+                  lose_market STRING OPTIONS (description = 'Market of the losing team'),
+                  lose_name STRING OPTIONS (description = 'Name of the losing team'),
+                  lose_alias STRING OPTIONS (description = 'Alias of the losing team'),
+                  lose_team_id STRING OPTIONS (description = 'ID of the losing team'),
+                  lose_school_ncaa STRING OPTIONS (description = 'NCAA school name of the losing team'),
+                  lose_code_ncaa INTEGER OPTIONS (description = 'NCAA code of the losing team'),
+                  lose_kaggle_team_id INTEGER OPTIONS (description = 'Kaggle team ID of the losing team'),
+                  lose_pts INTEGER OPTIONS (description = 'Points scored by the losing team'),
+                  num_ot INTEGER OPTIONS (description = 'Number of overtime periods'),
+                  academic_year INTEGER OPTIONS (description = 'The academic year of the tournament')
+                )
+                PARTITION BY game_date
+
+          - id: load_ncaa_historical_tournament_games_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_tournament_games/mbb_historical_tournament_games_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_historical_tournament_games"
+
+      - id: if_mbb_pbp_sr
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_pbp_sr'}}"
+        then: 
+          - id: bq_ncaa_play_by_play_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_play_by_play`
+                (
+                  game_id STRING OPTIONS (description = 'Unique identifier for the game'),
+                  load_timestamp TIMESTAMP OPTIONS (description = 'Timestamp when the data was loaded'),
+                  season INTEGER OPTIONS (description = 'The season of the game'),
+                  status STRING OPTIONS (description = 'Status of the game'),
+                  scheduled_date TIMESTAMP OPTIONS (description = 'Scheduled date and time of the game'),
+                  venue_id STRING OPTIONS (description = 'Identifier for the venue'),
+                  venue_name STRING OPTIONS (description = 'Name of the venue'),
+                  venue_city STRING OPTIONS (description = 'City of the venue'),
+                  venue_state STRING OPTIONS (description = 'State of the venue'),
+                  venue_address STRING OPTIONS (description = 'Address of the venue'),
+                  venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
+                  venue_country STRING OPTIONS (description = 'Country of the venue'),
+                  venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
+                  attendance INTEGER OPTIONS (description = 'Attendance at the game'),
+                  neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
+                  conference_game BOOLEAN OPTIONS (description = 'Indicates if it was a conference game'),
+                  tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
+                  tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
+                  round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
+                  game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
+                  away_market STRING OPTIONS (description = 'Market of the away team'),
+                  away_name STRING OPTIONS (description = 'Name of the away team'),
+                  away_id STRING OPTIONS (description = 'Identifier for the away team'),
+                  away_alias STRING OPTIONS (description = 'Alias of the away team'),
+                  away_conf_name STRING OPTIONS (description = 'Conference name of the away team'),
+                  away_conf_alias STRING OPTIONS (description = 'Conference alias of the away team'),
+                  away_division_name STRING OPTIONS (description = 'Division name of the away team'),
+                  away_division_alias STRING OPTIONS (description = 'Division alias of the away team'),
+                  away_league_name STRING OPTIONS (description = 'League name of the away team'),
+                  home_market STRING OPTIONS (description = 'Market of the home team'),
+                  home_name STRING OPTIONS (description = 'Name of the home team'),
+                  home_id STRING OPTIONS (description = 'Identifier for the home team'),
+                  home_alias STRING OPTIONS (description = 'Alias of the home team'),
+                  home_conf_name STRING OPTIONS (description = 'Conference name of the home team'),
+                  home_conf_alias STRING OPTIONS (description = 'Conference alias of the home team'),
+                  home_division_name STRING OPTIONS (description = 'Division name of the home team'),
+                  home_division_alias STRING OPTIONS (description = 'Division alias of the home team'),
+                  home_league_name STRING OPTIONS (description = 'League name of the home team'),
+                  period INTEGER OPTIONS (description = 'Current period of the game'),
+                  game_clock STRING OPTIONS (description = 'Time remaining in the current period'),
+                  elapsed_time_sec INTEGER OPTIONS (description = 'Elapsed time in seconds'),
+                  possession_arrow STRING OPTIONS (description = 'Indicates which team has the possession arrow'),
+                  team_name STRING OPTIONS (description = 'Name of the team involved in the event'),
+                  team_market STRING OPTIONS (description = 'Market of the team involved in the event'),
+                  team_id STRING OPTIONS (description = 'Identifier of the team involved in the event'),
+                  team_alias STRING OPTIONS (description = 'Alias of the team involved in the event'),
+                  team_conf_name STRING OPTIONS (description = 'Conference name of the team involved in the event'),
+                  team_conf_alias STRING OPTIONS (description = 'Conference alias of the team involved in the event'),
+                  team_division_name STRING OPTIONS (description = 'Division name of the team involved in the event'),
+                  team_division_alias STRING OPTIONS (description = 'Division alias of the team involved in the event'),
+                  team_league_name STRING OPTIONS (description = 'League name of the team involved in the event'),
+                  team_basket STRING OPTIONS (description = 'Identifier for the basket'),
+                  possession_team_id STRING OPTIONS (description = 'Identifier of the team with possession'),
+                  player_id STRING OPTIONS (description = 'Identifier for the player involved in the event'),
+                  player_full_name STRING OPTIONS (description = 'Full name of the player involved in the event'),
+                  jersey_num INTEGER OPTIONS (description = 'Jersey number of the player'),
+                  event_id STRING OPTIONS (description = 'Unique identifier for the event'),
+                  timestamp TIMESTAMP OPTIONS (description = 'Timestamp of the event'),
+                  event_description STRING OPTIONS (description = 'Description of the event'),
+                  event_coord_x FLOAT64 OPTIONS (description = 'X coordinate of the event'),
+                  event_coord_y FLOAT64 OPTIONS (description = 'Y coordinate of the event'),
+                  event_type STRING OPTIONS (description = 'Type of the event'),
+                  type STRING OPTIONS (description = 'Specific type of the event'),
+                  shot_made BOOLEAN OPTIONS (description = 'Indicates if a shot was made'),
+                  shot_type STRING OPTIONS (description = 'Type of shot taken'),
+                  shot_subtype STRING OPTIONS (description = 'Subtype of shot taken'),
+                  three_point_shot BOOLEAN OPTIONS (description = 'Indicates if it was a three-point shot'),
+                  points_scored FLOAT64 OPTIONS (description = 'Points scored in the event'),
+                  turnover_type STRING OPTIONS (description = 'Type of turnover (if applicable)'),
+                  rebound_type STRING OPTIONS (description = 'Type of rebound (if applicable)'),
+                  timeout_duration FLOAT64 OPTIONS (description = 'Duration of the timeout (if applicable)')
+                )
+                PARTITION BY DATE(scheduled_date)
+                CLUSTER BY game_id, team_id
+
+          - id: load_ncaa_player_play_by_play_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_pbp_sr/mbb_pbp_sr_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_player_play_by_play"
+
+      - id: if_mbb_players_games_sr
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_players_games_sr'}}"
+        then:
+          - id: bq_ncaa_player_game_stats_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_player_game_stats`
+                (
+                  game_id STRING OPTIONS (description = 'Unique identifier for the game'),
+                  season INTEGER OPTIONS (description = 'The season of the game'),
+                  neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
+                  scheduled_date DATE OPTIONS (description = 'The scheduled date of the game'),
+                  gametime TIMESTAMP OPTIONS (description = 'The scheduled date and time of the game'),
+                  tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
+                  tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
+                  tournament_round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
+                  tournament_game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
+                  player_id STRING OPTIONS (description = 'Unique identifier for the player'),
+                  last_name STRING OPTIONS (description = 'Last name of the player'),
+                  first_name STRING OPTIONS (description = 'First name of the player'),
+                  full_name STRING OPTIONS (description = 'Full name of the player'),
+                  abbr_name STRING OPTIONS (description = 'Abbreviated name of the player'),
+                  status STRING OPTIONS (description = 'Status of the player in the game'),
+                  jersey_number INTEGER OPTIONS (description = 'Jersey number of the player'),
+                  height INTEGER OPTIONS (description = 'Height of the player (in inches or cm, check data source)'),
+                  weight INTEGER OPTIONS (description = 'Weight of the player (in lbs or kg, check data source)'),
+                  birth_place STRING OPTIONS (description = 'Birth place of the player'),
+                  birthplace_city STRING OPTIONS (description = 'Birth city of the player'),
+                  birthplace_state STRING OPTIONS (description = 'Birth state/province of the player'),
+                  birthplace_country STRING OPTIONS (description = 'Birth country of the player'),
+                  class STRING OPTIONS (description = 'Class/year of the player (e.g., Freshman, Senior)'),
+                  team_name STRING OPTIONS (description = 'Name of the team the player played for'),
+                  team_market STRING OPTIONS (description = 'Market of the team the player played for'),
+                  team_id STRING OPTIONS (description = 'Unique identifier for the team'),
+                  team_alias STRING OPTIONS (description = 'Alias of the team'),
+                  conf_name STRING OPTIONS (description = 'Conference name of the team'),
+                  conf_alias STRING OPTIONS (description = 'Conference alias of the team'),
+                  division_name STRING OPTIONS (description = 'Division name of the team'),
+                  division_alias STRING OPTIONS (description = 'Division alias of the team'),
+                  league_name STRING OPTIONS (description = 'League name of the team'),
+                  home_team BOOLEAN OPTIONS (description = 'Indicates if the player\'s team was the home team'),
+                  active BOOLEAN OPTIONS (description = 'Indicates if the player was active for the game'),
+                  played BOOLEAN OPTIONS (description = 'Indicates if the player played in the game'),
+                  starter BOOLEAN OPTIONS (description = 'Indicates if the player was a starter'),
+                  minutes STRING OPTIONS (description = 'Minutes played by the player'),
+                  minutes_int64 INTEGER OPTIONS (description = 'Minutes played by the player'),
+                  position STRING OPTIONS (description = 'Position of the player'),
+                  primary_position STRING OPTIONS (description = 'Primary position of the player'),
+                  field_goals_made INTEGER OPTIONS (description = 'Number of field goals made'),
+                  field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted'),
+                  field_goals_pct FLOAT64 OPTIONS (description = 'Field goal percentage'),
+                  three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made'),
+                  three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted'),
+                  three_points_pct FLOAT64 OPTIONS (description = 'Three-point shot percentage'),
+                  two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made'),
+                  two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted'),
+                  two_points_pct FLOAT64 OPTIONS (description = 'Two-point shot percentage'),
+                  blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked'),
+                  free_throws_made INTEGER OPTIONS (description = 'Number of free throws made'),
+                  free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted'),
+                  free_throws_pct FLOAT64 OPTIONS (description = 'Free throw percentage'),
+                  offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds'),
+                  defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds'),
+                  rebounds INTEGER OPTIONS (description = 'Total number of rebounds'),
+                  assists INTEGER OPTIONS (description = 'Number of assists'),
+                  turnovers INTEGER OPTIONS (description = 'Number of turnovers'),
+                  steals INTEGER OPTIONS (description = 'Number of steals'),
+                  blocks INTEGER OPTIONS (description = 'Number of blocks'),
+                  assists_turnover_ratio FLOAT64 OPTIONS (description = 'Ratio of assists to turnovers'),
+                  personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls'),
+                  tech_fouls INTEGER OPTIONS (description = 'Number of technical fouls'),
+                  flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls'),
+                  points INTEGER OPTIONS (description = 'Total points scored by the player'),
+                  sp_created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created (likely by the data provider)')
+                )
+                PARTITION BY scheduled_date
+                CLUSTER BY team_id, player_id
+
+          - id: load_ncaa_player_game_stats_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_players_games_sr/mbb_players_games_sr_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_player_game_stats"
+
+      - id: if_mbb_teams_games_sr
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_teams_games_sr'}}"
+        then:
+          - id: bq_ncaa_team_game_stats_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_game_stats`
+                (
+                  game_id STRING OPTIONS (description = 'Unique identifier for the game'),
+                  season INTEGER OPTIONS (description = 'The season of the game'),
+                  status STRING OPTIONS (description = 'Status of the game'),
+                  coverage STRING OPTIONS (description = 'Coverage of the game'),
+                  neutral_site BOOLEAN OPTIONS (description = 'Indicates if the game was played at a neutral site'),
+                  scheduled_date DATE OPTIONS (description = 'The scheduled date of the game'),
+                  gametime TIMESTAMP OPTIONS (description = 'The scheduled date and time of the game'),
+                  conference_game BOOLEAN OPTIONS (description = 'Indicates if it was a conference game'),
+                  tournament STRING OPTIONS (description = 'Name of the tournament (if applicable)'),
+                  tournament_type STRING OPTIONS (description = 'Type of the tournament (if applicable)'),
+                  tournament_round STRING OPTIONS (description = 'Round of the tournament (if applicable)'),
+                  tournament_game_no STRING OPTIONS (description = 'Game number within the round/tournament'),
+                  attendance INTEGER OPTIONS (description = 'Attendance at the game'),
+                  lead_changes INTEGER OPTIONS (description = 'Number of lead changes in the game'),
+                  times_tied INTEGER OPTIONS (description = 'Number of times the score was tied'),
+                  periods INTEGER OPTIONS (description = 'Number of periods in the game'),
+                  possession_arrow STRING OPTIONS (description = 'Indicates which team had the possession arrow'),
+                  venue_id STRING OPTIONS (description = 'Identifier for the venue'),
+                  venue_city STRING OPTIONS (description = 'City of the venue'),
+                  venue_state STRING OPTIONS (description = 'State of the venue'),
+                  venue_address STRING OPTIONS (description = 'Address of the venue'),
+                  venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
+                  venue_country STRING OPTIONS (description = 'Country of the venue'),
+                  venue_name STRING OPTIONS (description = 'Name of the venue'),
+                  venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
+                  home_team BOOLEAN OPTIONS (description = 'Indicates if this record is for the home team'),
+                  name STRING OPTIONS (description = 'Name of the team'),
+                  market STRING OPTIONS (description = 'Market of the team'),
+                  team_id STRING OPTIONS (description = 'Unique identifier for the team'),
+                  alias STRING OPTIONS (description = 'Alias of the team'),
+                  league_id STRING OPTIONS (description = 'Identifier for the league'),
+                  league_name STRING OPTIONS (description = 'Name of the league'),
+                  league_alias STRING OPTIONS (description = 'Alias of the league'),
+                  conf_id STRING OPTIONS (description = 'Identifier for the conference'),
+                  conf_name STRING OPTIONS (description = 'Name of the conference'),
+                  conf_alias STRING OPTIONS (description = 'Alias of the conference'),
+                  division_id STRING OPTIONS (description = 'Identifier for the division'),
+                  division_name STRING OPTIONS (description = 'Name of the division'),
+                  division_alias STRING OPTIONS (description = 'Alias of the division'),
+                  logo_large STRING OPTIONS (description = 'URL for the large logo'),
+                  logo_medium STRING OPTIONS (description = 'URL for the medium logo'),
+                  logo_small STRING OPTIONS (description = 'URL for the small logo'),
+                  opp_name STRING OPTIONS (description = 'Name of the opponent team'),
+                  opp_market STRING OPTIONS (description = 'Market of the opponent team'),
+                  opp_id STRING OPTIONS (description = 'Unique identifier for the opponent team'),
+                  opp_alias STRING OPTIONS (description = 'Alias of the opponent team'),
+                  opp_league_id STRING OPTIONS (description = 'Identifier for the opponent league'),
+                  opp_league_name STRING OPTIONS (description = 'Name of the opponent league'),
+                  opp_league_alias STRING OPTIONS (description = 'Alias of the opponent league'),
+                  opp_conf_id STRING OPTIONS (description = 'Identifier for the opponent conference'),
+                  opp_conf_name STRING OPTIONS (description = 'Name of the opponent conference'),
+                  opp_conf_alias STRING OPTIONS (description = 'Alias of the opponent conference'),
+                  opp_division_id STRING OPTIONS (description = 'Identifier for the opponent division'),
+                  opp_division_name STRING OPTIONS (description = 'Name of the opponent division'),
+                  opp_division_alias STRING OPTIONS (description = 'Alias of the opponent division'),
+                  opp_logo_large STRING OPTIONS (description = 'URL for the large logo of the opponent'),
+                  opp_logo_medium STRING OPTIONS (description = 'URL for the medium logo of the opponent'),
+                  opp_logo_small STRING OPTIONS (description = 'URL for the small logo of the opponent'),
+                  win BOOLEAN OPTIONS (description = 'Indicates if this team won the game'),
+                  points_game INTEGER OPTIONS (description = 'Points scored by this team in the game'),
+                  minutes STRING OPTIONS (description = 'Minutes played by this team (may not be applicable)'),
+                  field_goals_made INTEGER OPTIONS (description = 'Number of field goals made by this team'),
+                  field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted by this team'),
+                  field_goals_pct FLOAT64 OPTIONS (description = 'Field goal percentage of this team'),
+                  three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made by this team'),
+                  three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted by this team'),
+                  three_points_pct FLOAT64 OPTIONS (description = 'Three-point shot percentage of this team'),
+                  two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made by this team'),
+                  two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted by this team'),
+                  two_points_pct FLOAT64 OPTIONS (description = 'Two-point shot percentage of this team'),
+                  blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked by the opponent'),
+                  free_throws_made INTEGER OPTIONS (description = 'Number of free throws made by this team'),
+                  free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted by this team'),
+                  free_throws_pct FLOAT64 OPTIONS (description = 'Free throw percentage of this team'),
+                  offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds by this team'),
+                  defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds by this team'),
+                  rebounds INTEGER OPTIONS (description = 'Total rebounds by this team'),
+                  assists INTEGER OPTIONS (description = 'Number of assists by this team'),
+                  turnovers INTEGER OPTIONS (description = 'Number of turnovers by this team'),
+                  steals INTEGER OPTIONS (description = 'Number of steals by this team'),
+                  blocks INTEGER OPTIONS (description = 'Number of blocks by this team'),
+                  assists_turnover_ratio FLOAT64 OPTIONS (description = 'Assist to turnover ratio of this team'),
+                  personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls committed by this team'),
+                  ejections INTEGER OPTIONS (description = 'Number of ejections for this team'),
+                  foulouts INTEGER OPTIONS (description = 'Number of players who fouled out on this team'),
+                  points INTEGER OPTIONS (description = 'Total points scored by this team'),
+                  fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by this team'),
+                  second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by this team'),
+                  team_turnovers INTEGER OPTIONS (description = 'Team turnovers (may be redundant)'),
+                  points_off_turnovers INTEGER OPTIONS (description = 'Points scored off opponent turnovers by this team'),
+                  team_rebounds INTEGER OPTIONS (description = 'Team rebounds (may be redundant)'),
+                  flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls committed by this team'),
+                  player_tech_fouls INTEGER OPTIONS (description = 'Number of player technical fouls committed by this team'),
+                  team_tech_fouls INTEGER OPTIONS (description = 'Number of team technical fouls committed by this team'),
+                  coach_tech_fouls INTEGER OPTIONS (description = 'Number of coach technical fouls'),
+                  opp_points_game INTEGER OPTIONS (description = 'Points scored by the opponent team'),
+                  opp_minutes STRING OPTIONS (description = 'Minutes played by the opponent team (may not be applicable)'),
+                  opp_field_goals_made INTEGER OPTIONS (description = 'Number of field goals made by the opponent team'),
+                  opp_field_goals_att INTEGER OPTIONS (description = 'Number of field goals attempted by the opponent team'),
+                  opp_field_goals_pct FLOAT64 OPTIONS (description = 'Field goal percentage of the opponent team'),
+                  opp_three_points_made INTEGER OPTIONS (description = 'Number of three-point shots made by the opponent team'),
+                  opp_three_points_att INTEGER OPTIONS (description = 'Number of three-point shots attempted by the opponent team'),
+                  opp_three_points_pct FLOAT64 OPTIONS (description = 'Three-point shot percentage of the opponent team'),
+                  opp_two_points_made INTEGER OPTIONS (description = 'Number of two-point shots made by the opponent team'),
+                  opp_two_points_att INTEGER OPTIONS (description = 'Number of two-point shots attempted by the opponent team'),
+                  opp_two_points_pct FLOAT64 OPTIONS (description = 'Two-point shot percentage of the opponent team'),
+                  opp_blocked_att INTEGER OPTIONS (description = 'Number of shot attempts blocked by this team'),
+                  opp_free_throws_made INTEGER OPTIONS (description = 'Number of free throws made by the opponent team'),
+                  opp_free_throws_att INTEGER OPTIONS (description = 'Number of free throws attempted by the opponent team'),
+                  opp_free_throws_pct FLOAT64 OPTIONS (description = 'Free throw percentage of the opponent team'),
+                  opp_offensive_rebounds INTEGER OPTIONS (description = 'Number of offensive rebounds by the opponent team'),
+                  opp_defensive_rebounds INTEGER OPTIONS (description = 'Number of defensive rebounds by the opponent team'),
+                  opp_rebounds INTEGER OPTIONS (description = 'Total rebounds by the opponent team'),
+                  opp_assists INTEGER OPTIONS (description = 'Number of assists by the opponent team'),
+                  opp_turnovers INTEGER OPTIONS (description = 'Number of turnovers by the opponent team'),
+                  opp_steals INTEGER OPTIONS (description = 'Number of steals by the opponent team'),
+                  opp_blocks INTEGER OPTIONS (description = 'Number of blocks by the opponent team'),
+                  opp_assists_turnover_ratio FLOAT64 OPTIONS (description = 'Assist to turnover ratio of the opponent team'),
+                  opp_personal_fouls INTEGER OPTIONS (description = 'Number of personal fouls committed by the opponent team'),
+                  opp_ejections INTEGER OPTIONS (description = 'Number of ejections for the opponent team'),
+                  opp_foulouts INTEGER OPTIONS (description = 'Number of players who fouled out on the opponent team'),
+                  opp_points INTEGER OPTIONS (description = 'Total points scored by the opponent team'),
+                  opp_fast_break_pts INTEGER OPTIONS (description = 'Fast break points scored by the opponent team'),
+                  opp_second_chance_pts INTEGER OPTIONS (description = 'Second chance points scored by the opponent team'),
+                  opp_team_turnovers INTEGER OPTIONS (description = 'Opponent team turnovers (may be redundant)'),
+                  opp_points_off_turnovers INTEGER OPTIONS (description = 'Points scored off turnovers by the opponent team'),
+                  opp_team_rebounds INTEGER OPTIONS (description = 'Opponent team rebounds (may be redundant)'),
+                  opp_flagrant_fouls INTEGER OPTIONS (description = 'Number of flagrant fouls committed by the opponent team'),
+                  opp_player_tech_fouls INTEGER OPTIONS (description = 'Number of opponent player technical fouls'),
+                  opp_team_tech_fouls INTEGER OPTIONS (description = 'Number of opponent team technical fouls'),
+                  opp_coach_tech_fouls INTEGER OPTIONS (description = 'Number of opponent coach technical fouls'),
+                  created TIMESTAMP OPTIONS (description = 'Timestamp when this record was created')
+                  )
+                  PARTITION BY scheduled_date
+                  CLUSTER BY game_id, team_id
+
+          - id: load_ncaa_team_game_stats_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams_games_sr/mbb_teams_games_sr_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_team_game_stats"
+
+      - id: if_mbb_teams
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'mbb_teams'}}"
+        then:
+          - id: bq_create_mbb_teams_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_teams`
+              (
+                market STRING OPTIONS (description = 'Market of the team'),
+                alias STRING OPTIONS (description = 'Alias of the team'),
+                name STRING OPTIONS (description = 'Name of the team'),
+                id STRING OPTIONS (description = 'Unique ID of the team'),
+                code_ncaa INTEGER OPTIONS (description = 'NCAA code of the team'),
+                kaggle_team_id INTEGER OPTIONS (description = 'Kaggle ID of the team'),
+                school_ncaa STRING OPTIONS (description = 'NCAA school name of the team'),
+                turner_name STRING OPTIONS (description = 'Turner name of the team'),
+                league_name STRING OPTIONS (description = 'Name of the league'),
+                league_alias STRING OPTIONS (description = 'Alias of the league'),
+                league_id STRING OPTIONS (description = 'Unique ID of the league'),
+                conf_name STRING OPTIONS (description = 'Name of the conference'),
+                conf_alias STRING OPTIONS (description = 'Alias of the conference'),
+                conf_id STRING OPTIONS (description = 'Unique ID of the conference'),
+                division_name STRING OPTIONS (description = 'Name of the division'),
+                division_alias STRING OPTIONS (description = 'Alias of the division'),
+                division_id STRING OPTIONS (description = 'Unique ID of the division'),
+                venue_id STRING OPTIONS (description = 'Unique ID of the venue'),
+                venue_city STRING OPTIONS (description = 'City of the venue'),
+                venue_state STRING OPTIONS (description = 'State of the venue'),
+                venue_address STRING OPTIONS (description = 'Address of the venue'),
+                venue_zip STRING OPTIONS (description = 'Zip code of the venue'),
+                venue_country STRING OPTIONS (description = 'Country of the venue'),
+                venue_name STRING OPTIONS (description = 'Name of the venue'),
+                venue_capacity INTEGER OPTIONS (description = 'Capacity of the venue'),
+                logo_large STRING OPTIONS (description = 'Large logo URL of the team'),
+                logo_medium STRING OPTIONS (description = 'Medium logo URL of the team'),
+                logo_small STRING OPTIONS (description = 'Small logo URL of the team')
+              )
+
+          - id: load_ncaa_teams_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams/mbb_teams_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_teams"
+
+      - id: if_team_colors
+        type: io.kestra.plugin.core.flow.If
+        condition: "{{taskrun.value == 'team_colors'}}"
+        then:
+          - id: bq_ncaa_team_colors_create_table
+            serviceAccount: "{{kv('GCP_ACCOUNT')}}"
+            type: io.kestra.plugin.gcp.bigquery.Query
+            sql: |
+              CREATE TABLE IF NOT EXISTS `{{kv('GCP_PROJECT_ID')}}.{{kv('GCP_DATASET')}}.ncaa_team_colors_alt`
+                (
+                  market STRING OPTIONS (description = 'Market of the team'),
+                  id STRING OPTIONS (description = 'Unique ID for the team'),
+                  code_ncaa INTEGER OPTIONS (description = 'NCAA code for the team'),
+                  color STRING OPTIONS (description = 'Color of the team')
+                )
+                
+          - id: load_ncaa_team_colors_alt_data
+            type: io.kestra.plugin.core.flow.Subflow
+            flowId: load_csv_to_bq_duplicates
+            namespace: ncaa_project
+            inputs:
+              uri: "gs://{{kv('GCP_BUCKET_NAME')}}/team_colors/team_colors_{{inputs.value_date}}.zip"
+              destination_table: "ncaa_team_colors_alt"       
 
 triggers:
   - id: dependancy_on_gcs
@@ -644,4 +757,4 @@ triggers:
       flows:
         - namespace: ncaa_project
           flowId: bq_to_gcs
-          states: [SUCCESS]
+          states: [SUCCESS, WARNING]
