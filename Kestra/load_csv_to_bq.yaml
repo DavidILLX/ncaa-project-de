@@ -1,5 +1,6 @@
 id: load_csv_to_bq
 namespace: ncaa_project
+description: Downloading file which is passed thorugh input then decompressing it and loading it to created BigQuery table.
 
 inputs:
   - id: uri

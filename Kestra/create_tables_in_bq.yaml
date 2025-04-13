@@ -1,16 +1,12 @@
 id: tables_in_bq_alt
 namespace: ncaa_project
-description: Creating tables with schema and structure in BigQuery based on csv files in google could storage buckets.
+description: Creating tables with schema and structure in BigQuery based on csv files in GCS buckets with dependent triggers.
 
 pluginDefaults:
   - type: io.kestra.plugin.gcp
     values:
       projectId: "{{kv('GCP_PROJECT_ID')}}"
       bucket: "{{kv('GCP_BUCKET_NAME')}}"
-
-inputs:
-  - id: value_date
-    type: STRING     
 
 variables:
   all_tables:

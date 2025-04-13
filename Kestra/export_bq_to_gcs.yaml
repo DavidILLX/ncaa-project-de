@@ -1,11 +1,11 @@
 id: bq_to_gcs
 namespace: ncaa_project
+description: Python script to download and compress files to GCS bucket based on trigger which is on Moday every week at 3:00 AM. Then passing the value of date to dependant workflows.
 
 tasks:
   - id: run_py
-    type: io.kestra.plugin.scripts.python.Script # Use the dedicated Python task type
+    type: io.kestra.plugin.scripts.python.Script
     description: Runs a basic Python script printing a message.
-    # --- KESTRA CONFIGURATION ---s
     taskRunner:
       type: io.kestra.plugin.core.runner.Process
     beforeCommands:

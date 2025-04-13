@@ -1,12 +1,13 @@
 id: gcp_kv
 namespace: ncaa_project
+Description: Key values for Kestra so it is easier to navigate.
 
 tasks:
   - id: gcp_project_id
     type: io.kestra.plugin.core.kv.Set
     key: GCP_PROJECT_ID
     kvType: STRING
-    value: ncaa-project-455709 # TODO replace with your project id
+    value: ncaa-project-455709 # TODO replace with your project ID
 
   - id: gcp_location
     type: io.kestra.plugin.core.kv.Set
