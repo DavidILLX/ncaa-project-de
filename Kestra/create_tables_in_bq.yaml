@@ -419,7 +419,7 @@ tasks:
                   timeout_duration FLOAT64 OPTIONS (description = 'Duration of the timeout (if applicable)')
                 )
                 PARTITION BY DATE(scheduled_date)
-                CLUSTER BY game_id, team_id
+                CLUSTER BY game_id, team_id, player_id
 
           - id: load_ncaa_player_play_by_play_data
             type: io.kestra.plugin.core.flow.Subflow
