@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: staging
+    database: ncaa-project-455709 # TO DO change to name of your project
+    schema:  ncaa_dataset
+
+    tables:
+      - name: ncaa_player_play_by_play
+      - name: ncaa_player_game_stats
+      - name: ncaa_team_game_stats
+      - name: ncaa_historical_tournament_games
