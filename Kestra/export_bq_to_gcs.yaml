@@ -1,6 +1,6 @@
 id: bq_to_gcs
 namespace: ncaa_project
-description: Python script to download and compress files to GCS bucket based on trigger which is on Moday every week at 3:00 AM. Then passing the value of date to dependant workflows.
+description: Python script to download and compress files to GCS bucket based on trigger which is on Monday every week at 3:00 AM. Then passing the value of date to dependant workflows.
 
 tasks:
   - id: run_py

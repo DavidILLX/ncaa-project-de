@@ -52,6 +52,8 @@ resource "google_bigquery_dataset" "ncaa_dataset" {
   dataset_id = var.bq_dataset_name
   project    = var.project
   location   = var.location
+
+  depends_on = [google_project_service.enabled_apis]
 }
 
 resource "google_compute_network" "my_vpc" {
