@@ -1,6 +1,6 @@
 id: gcp_kv
 namespace: ncaa_project
-Description: Key values for Kestra so it is easier to navigate.
+description: Key values for Kestra so it is easier to navigate.
 
 tasks:
   - id: gcp_project_id

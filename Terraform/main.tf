@@ -140,7 +140,7 @@ resource "google_sql_database_instance" "postgresql_instance" {
   region              = var.region
   database_version    = "POSTGRES_15" #Kestra does not run on v16 
   deletion_protection = false
-  
+
   settings {
     tier      = var.db_tier
     edition   = var.db_edition
