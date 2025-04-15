@@ -58,7 +58,7 @@ tasks:
 
           - id: load_mascots_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mascots/mascots_{{ inputs.value_date }}.zip"
@@ -211,7 +211,7 @@ tasks:
 
           - id: load_ncaa_teams_info_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_games_sr/mbb_games_sr_{{inputs.value_date}}.zip"
@@ -250,7 +250,7 @@ tasks:
 
           - id: load_ncaa_historic_teams_games_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_games/mbb_historical_teams_games_{{inputs.value_date}}.zip"
@@ -282,7 +282,7 @@ tasks:
 
           - id: load_ncaa_historical_teams_seasons_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_teams_seasons/mbb_historical_teams_seasons_{{inputs.value_date}}.zip"
@@ -330,7 +330,7 @@ tasks:
 
           - id: load_ncaa_historical_tournament_games_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_historical_tournament_games/mbb_historical_tournament_games_{{inputs.value_date}}.zip"
@@ -423,7 +423,7 @@ tasks:
 
           - id: load_ncaa_player_play_by_play_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_pbp_sr/mbb_pbp_sr_{{inputs.value_date}}.zip"
@@ -511,7 +511,7 @@ tasks:
 
           - id: load_ncaa_player_game_stats_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_players_games_sr/mbb_players_games_sr_{{inputs.value_date}}.zip"
@@ -665,7 +665,7 @@ tasks:
 
           - id: load_ncaa_team_game_stats_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams_games_sr/mbb_teams_games_sr_{{inputs.value_date}}.zip"
@@ -713,7 +713,7 @@ tasks:
 
           - id: load_ncaa_teams_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/mbb_teams/mbb_teams_{{inputs.value_date}}.zip"
@@ -737,7 +737,7 @@ tasks:
                 
           - id: load_ncaa_team_colors_alt_data
             type: io.kestra.plugin.core.flow.Subflow
-            flowId: load_csv_to_bq_duplicates
+            flowId: load_csv_to_bq
             namespace: ncaa_project
             inputs:
               uri: "gs://{{kv('GCP_BUCKET_NAME')}}/team_colors/team_colors_{{inputs.value_date}}.zip"
