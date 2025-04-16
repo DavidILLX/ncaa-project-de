@@ -37,3 +37,11 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 models:
   ncaa_project:
+    staging:
+      materialized: view
+
+vars:
+  get_event: ['block', 'threepointmiss', 'freethrow', 'twopointmade', 'rebound', 'assist', 'steal', 'ejection', 'twopointmiss', 'fieldgoal', 'personalfoul', 'threepointmade', 'turnover', 'flagrantfoul', 'offensivefoul', 'technicalfoul', 'fouldrawn', 'attemptblocked']
+  get_event_type: ['kickball', 'freethrow', 'ejection', 'teamtimeout', 'endperiod', 'lineupchange', 'threepointmiss', 'tvtimeout', 'freethrowmade', 'twopointmiss', 'possession', 'freethrowmiss', 'turnover', 'flagranttwo', 'deadball', 'review', 'officialtimeout', 'delay', 'threepointmade']
+  get_player_position: ['F', 'C', 'F-G', 'C-F', 'G', 'G-F', 'F-C']
+  get_player_status: ['RET', 'IR', 'SUS', 'D-League', 'ACT', 'NWT'] 

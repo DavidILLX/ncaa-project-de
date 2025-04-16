@@ -10,3 +10,539 @@ sources:
       - name: ncaa_player_game_stats
       - name: ncaa_team_game_stats
       - name: ncaa_historical_tournament_games
+      # freshness:
+           # error_after: {count: 14, period: day}
+
+models:
+  - name: stg_ncaa_player_play_by_play
+    description: >
+      Staging model that formats and enriches NCAA player-level play-by-play data.
+      Includes detailed in-game event data, shot attempts, turnovers, and more for each player
+      and game combination.
+
+    columns:
+      - name: play_id
+        description: Surrogate key generated from player_id, game_id, and team_id
+        tests:
+          - unique:
+              severity: warn
+          - not_null:
+              severity: warn
+
+      - name: player_id
+        description: Unique identifier for the player
+        tests:
+          - not_null:
+              severity: warn
+      - name: game_id
+        description: Unique identifier for the game
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team_id
+        description: Unique identifier for the player's team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: points
+        description: Number of points scored in the play
+        tests:
+          - not_null
+
+      - name: scheduled_date
+        description: Date the game was played (converted from TIMESTAMP)
+        tests:
+          - not_null
+
+      - name: player_name
+        description: Full name of the player involved in the play
+
+      - name: team
+        description: Name of the player's team
+
+      - name: shot_type
+        description: Type of shot attempted (e.g., 2PT, 3PT, FT)
+
+      - name: attendence
+        description: Attendance at the game (may be null or malformed in source)
+
+      - name: shot_made
+        description: Boolean indicating if the shot was made
+
+      - name: game_clock
+        description: Game clock time at which the event occurred
+
+      - name: season
+        description: Season during which the event occurred
+
+      - name: rebound_type
+        description: Type of rebound (e.g., offensive, defensive)
+
+      - name: turnover_type
+        description: Type of turnover (e.g., steal, out of bounds)
+
+      - name: event_coordinates_x
+        description: X coordinate of the event on the court
+
+      - name: event_coordinates_y
+        description: Y coordinate of the event on the court
+
+      - name: event_description
+        description: Text description of the play-by-play event
+
+      - name: type_of_event
+        description: Standardized type of event (e.g., Shot, Rebound, Foul)
+        tests: 
+          - accepted_values:
+              values: "{{ var('get_event_type') }}"
+              severity: warn
+              quote: false
+
+      - name: event
+        description: Standardized event name based on source field
+        tests:    
+          - accepted_values:
+              values: "{{ var('get_event') }}"
+              severity: warn
+              quote: false
+
+  - name: stg_ncaa_player_game_stats
+    description: > 
+      This table has the basics of players movements and action changed to basics statistics.
+      This staging model that cleans and formats player-level game statistics from raw NCAA data.
+      Includes core performance metrics, basic player profile info, and team context.
+    columns:
+      - name: player_team_id
+        description: primary key for this table, generated with cincatenation of player_id, game_id, team_id and scheduled date of the game.
+        tests:
+            - unique:
+                severity: warn
+            - not_null:
+                severity: warn
+
+      - name: player_id
+        description: Unique identifier for the player
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: game_id
+        description: Unique identifier for the game
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team_id
+        description: Unique identifier for the player's team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: scheduled_date
+        description: Date the game was played (from scheduled timestamp)
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: player_full_name
+        description: Full name of the player
+
+      - name: abbrevated_name
+        description: Abbreviated version of the player name
+
+      - name: height
+        description: Height of the player in inches
+
+      - name: weight
+        description: Weight of the player in pounds
+
+      - name: birth_state
+        description: US state where the player was born
+
+      - name: birth_country
+        description: Country where the player was born
+
+      - name: team
+        description: Full team name the player was playing for
+
+      - name: team_state
+        description: Location (market) of the team
+
+      - name: number_of_games_played
+        description: Whether the player participated in the game
+
+      - name: number_of_games_as_starter
+        description: Whether the player was in the starting lineup
+
+      - name: minues_played
+        description: Total minutes the player spent on the court
+
+      - name: field_goals_made
+        description: Number of field goals made
+
+      - name: field_goals_attempted
+        description: Number of field goal attempts
+
+      - name: field_goals_percentage
+        description: Percentage of field goals made
+
+      - name: two_points_made
+        description: Number of 2-point shots made
+
+      - name: two_points_attempted
+        description: Number of 2-point shots attempted
+
+      - name: two_points_percentage
+        description: Percentage of 2-point shots made
+
+      - name: three_points_made
+        description: Number of 3-point shots made
+
+      - name: three_points_attempted
+        description: Number of 3-point shots attempted
+
+      - name: three_points_percentage
+        description: Percentage of 3-point shots made
+
+      - name: free_throws_made
+        description: Number of free throws made
+
+      - name: free_throws_attemtep
+        description: Number of free throws attempted
+
+      - name: free_throws_percentage
+        description: Percentage of free throws made
+
+      - name: offensive_rebounds
+        description: Number of offensive rebounds
+
+      - name: defensive_rebounds
+        description: Number of defensive rebounds
+
+      - name: assists
+        description: Number of assists
+
+      - name: turnovers
+        description: Number of turnovers
+
+      - name: steals
+        description: Number of steals
+
+      - name: blocks
+        description: Number of blocks
+
+      - name: personal_fouls
+        description: Number of personal fouls
+
+      - name: tech_fouls
+        description: Number of technical fouls
+
+      - name: flagrant_fouls
+        description: Number of flagrant fouls
+
+      - name: points
+        description: Total points scored in the game
+
+      - name: player_position
+        description: Interpreted player position based on input mapping logic (Forward, Guar, Center or mix of these)
+        tests: 
+            - accepted_values:
+                values: "{{ var('get_player_position') }}"
+                severity: warn
+                quote: false
+
+      - name: player_status
+        description: Interpreted player status (e.g. active, benched) from input mapping logic
+        tests: 
+          - accepted_values: 
+              values: "{{ var('get_player_status') }}"
+              severity: warn
+              quote: false
+
+  - name: stg_ncaa_team_game_stats
+    description: >
+      Team game stats staging model processes NCAA team-level game stats. 
+      Includes both team and opponent metrics for each game, venue information, 
+      and game-level identifiers.
+
+    columns:
+      - name: played_game_id
+        description: Surrogate key for a unique game played between two teams
+        tests:
+          - unique:
+              severity: warn
+          - not_null:
+              severity: warn
+      - name: team_id
+        description: Unique identifier for the team
+        tests:
+          - not_null:
+              severity: warn
+      - name: opp_id
+        description: Unique identifier for the opponent team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: game_id
+        description: Unique identifier for the game
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: scheduled_date
+        description: Date when the game was scheduled or played
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: season
+        description: Season year (e.g., 2023–24)
+
+      - name: venue_state
+        description: State where the game venue is located
+
+      - name: venue_name
+        description: Name of the venue where the game was played
+
+      - name: team_name
+        description: Name of the team
+
+      - name: team_state
+        description: Market or location of the team
+
+      - name: team_alias
+        description: Team alias or shorthand
+
+      - name: conference_name
+        description: Conference in which the team competes
+
+      - name: opponents_team_name
+        description: Opponent team’s name
+
+      - name: opponents_state
+        description: Market or location of the opponent team
+
+      - name: opponents_alias
+        description: Opponent team’s alias
+
+      - name: team_win
+        description: Boolean indicating if the team won
+
+      - name: lead_changes
+        description: Number of lead changes during the game
+
+      - name: tied_game
+        description: Number of times the game was tied
+
+      - name: field_goals_made
+        description: Number of field goals made by the team
+
+      - name: field_goals_attempted
+        description: Number of field goals attempted by the team
+
+      - name: field_goals_percentage
+        description: Shooting percentage on field goals
+
+      - name: two_points_made
+        description: Number of 2-point shots made by the team
+
+      - name: two_points_attempted
+        description: Number of 2-point shots attempted
+
+      - name: two_points_percentage
+        description: 2-point field goal percentage
+
+      - name: three_points_made
+        description: Number of 3-point shots made
+
+      - name: three_points_attempted
+        description: Number of 3-point shots attempted
+
+      - name: three_points_percentage
+        description: 3-point field goal percentage
+
+      - name: free_throws_made
+        description: Number of free throws made
+
+      - name: free_throws_attempted
+        description: Number of free throws attempted
+
+      - name: free_throws_percentage
+        description: Free throw shooting percentage
+
+      - name: team_rebounds
+        description: Total rebounds for the team
+
+      - name: team_offensive_rebounds
+        description: Offensive rebounds by the team
+
+      - name: team_defensive_rebounds
+        description: Defensive rebounds by the team
+
+      - name: team_assists
+        description: Assists by the team
+
+      - name: team_turnovers
+        description: Turnovers by the team
+
+      - name: team_steals
+        description: Steals by the team
+
+      - name: team_blocks
+        description: Blocks by the team
+
+      - name: team_points
+        description: Total points scored by the team
+
+      - name: opponents_points_game
+        description: Opponent's average points per game
+
+      - name: opponents_minutes
+        description: Total minutes played by opponents
+
+      - name: opponents_field_goals_made
+        description: Opponents field goals made
+
+      - name: opponents_field_goals_attempted
+        description: Opponents field goals attempted
+
+      - name: opponents_field_goals_percentage
+        description: Opponents field goal shooting percentage
+
+      - name: opponents_three_points_made
+        description: Opponents 3-point field goals made
+
+      - name: opponents_three_points_attempted
+        description: Opponents 3-point field goals attempted
+
+      - name: opponents_three_points_percentage
+        description: Opponents 3-point shooting percentage
+
+      - name: opponents_two_points_made
+        description: Opponents 2-point shots made
+
+      - name: opponents_two_points_attempted
+        description: Opponents 2-point shots attempted
+
+      - name: opponents_two_points_percentage
+        description: Opponents 2-point shooting percentage
+
+      - name: opponents_blocked_attempted
+        description: Opponent shot attempts that were blocked
+
+      - name: opponents_free_throws_made
+        description: Opponents free throws made
+
+      - name: opponents_free_throws_attempted
+        description: Opponents free throws attempted
+
+      - name: opponents_free_throws_percentage
+        description: Opponents free throw shooting percentage
+
+      - name: opponents_offensive_rebounds
+        description: Opponents offensive rebounds
+
+      - name: opponents_defensive_rebounds
+        description: Opponents defensive rebounds
+
+      - name: opponents_rebounds
+        description: Total rebounds by the opponent team
+
+      - name: opponents_assists
+        description: Opponents total assists
+
+      - name: opponents_turnovers
+        description: Opponents total turnovers
+
+      - name: opponents_steals
+        description: Opponents total steals
+
+      - name: opponents_blocks
+        description: Opponents total blocks
+
+      - name: opponents_assists_turnover_ratio
+        description: Opponents assist-to-turnover ratio
+
+      - name: opponents_points
+        description: Total points scored by the opponent team
+
+      - name: opponents_fast_break_points
+        description: Opponents fast break points
+
+      - name: opponents_second_chance_points
+        description: Opponents second chance points
+
+      - name: opponents_team_turnovers
+        description: Team turnovers forced by the opponent
+
+      - name: opponents_points_off_turnover
+        description: Points the opponent scored off turnovers
+
+  - name: stg_ncaa_historical_tournament_games
+    description: >
+      Staging model for NCAA historical tournament game results, including 
+      winning and losing team information, seeds, and points scored.
+
+    columns:
+      - name: game_id
+        description: Surrogate key combining winning team, losing team, and game date
+        tests:
+          - unique:
+              severity: warn
+          - not_null:
+              severity: warn
+
+      - name: win_team_id
+        description: Unique identifier for the winning team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: lose_team_id
+        description: Unique identifier for the losing team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: game_date
+        description: Date when the tournament game was played
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: season
+        description: NCAA basketball season during which the tournament game occurred
+
+      - name: win_seed
+        description: Tournament seed of the winning team
+
+      - name: winning_team_name
+        description: Name of the winning team
+
+      - name: winning_team_alias
+        description: Alias or abbreviation for the winning team
+
+      - name: winning_team_school
+        description: Full school name for the winning team
+
+      - name: winning_team_points
+        description: Total points scored by the winning team
+
+      - name: lose_seed
+        description: Tournament seed of the losing team
+
+      - name: losing_team_name
+        description: Name of the losing team
+
+      - name: losing_team_alias
+        description: Alias or abbreviation for the losing team
+
+      - name: losing_team_school
+        description: Full school name for the losing team
+
+      - name: losing_teams_points
+        description: Total points scored by the losing team
+
