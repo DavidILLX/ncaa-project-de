@@ -61,9 +61,9 @@ select
     points,
 
     {{get_player_position('position')}} as player_position,
-    {{get_player_status('status')}} as player_status,
+    {{get_player_status('status')}} as player_status
     
-from ncaa_dataset.ncaa_player_game_stats,
+from ncaa_dataset.ncaa_player_game_stats
 where rn = 1
 
 -- dbt build --select <model_name> --vars '{'is_test_run': 'false'}'

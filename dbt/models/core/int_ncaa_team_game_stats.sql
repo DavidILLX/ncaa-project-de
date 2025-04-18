@@ -1,4 +1,6 @@
-{{ config(materialized='view') }}
+{{ 
+    config(materialized='view') 
+}}
 
 with base as (
     select *
@@ -10,6 +12,7 @@ with base as (
         team_id,
         team_name,
         team_alias,
+        season,
         count(*) as total_games,
 
         -- Calculating teams wins and losses

@@ -30,6 +30,7 @@ select
     player_id,
     player_full_name as player_name,
     team_name as team,
+    away_name as opponents,
     shot_type,
     attendence,
     shot_made,
@@ -41,6 +42,7 @@ select
     event_coord_x as event_coordinates_x,
     event_coord_y as event_coordinates_y,
     event_description,
+    timestamp as event_timestamp,
 
     -- Macros
     {{ get_event_type('event_type')}} as type_of_event,

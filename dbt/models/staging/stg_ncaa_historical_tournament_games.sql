@@ -15,7 +15,7 @@ with tournament_game_stats as
 
 select
     -- Identification
-    {{dbt_utils.generate_surrogate_key(['win_team_id', 'lose_team_id', 'game_date'])}} as game_id,
+    {{dbt_utils.generate_surrogate_key(['win_team_id', 'lose_team_id', 'game_date'])}} as tournament_game_id,
     {{dbt.safe_cast("win_team__id", api.Column.translate_type('string'))}},
     {{dbt.safe_cast("lose_team_id", api.Column.translate_type('string'))}},
 
@@ -30,7 +30,7 @@ select
     lose_name as losing_team_name,
     lose_alias as losing_team_alias,
     lose_school_ncaa as losing_team_school,
-    lose_pts as losing_teams_points,
+    lose_pts as losing_team_points,
     
 from ncaa_dataset.ncaa_historical_tournament_games,
 where rn = 1

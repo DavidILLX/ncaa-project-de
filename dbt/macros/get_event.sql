@@ -22,7 +22,6 @@
         when 'offensivefoul' then 'Offensive Foul'
         when 'technicalfoul' then 'Technical Foul'
         when 'fouldrawn' then 'Foul Drawn'
-        when 'null' then 'Unknown'
         when 'attemptblocked' then 'Blocked Shot Attempt'
         else 'Other'
     end
