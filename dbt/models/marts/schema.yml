@@ -1,0 +1,250 @@
+version: 2
+
+sources:
+  - name: mart
+    database: ncaa-project-455709 # TO DO change to name of your project
+    schema:  ncaa_dataset
+
+models:
+    - name: mart_teams_performance
+      description: "Team performance summary with classification for high/medium performing teams based on win ratio."
+      columns:
+        - name: season
+          description: "Season of the performance."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: team_rank
+          description: "Rank of the team within the season based on win ratio."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: performance_team
+          description: "Team performance classification (High/Medium)."
+          tests:
+            - accepted_values:
+                values: ['High', 'Medium']
+                severity: warn
+
+        - name: team_id
+          description: "Unique identifier for the team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: team_name
+          description: "Name of the team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: team_alias
+          description: "Team alias or short name."
+
+        - name: total_games
+          description: "Number of games played in the season."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: win_ratio
+          description: "Win ratio for the team in the season."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: total_points
+          description: "Total points scored by the team in the season."
+
+        - name: total_field_goals
+          description: "Total field goals made by the team."
+
+        - name: total_free_throws_made
+          description: "Total free throws made by the team."
+
+        - name: total_assists
+          description: "Total assists by the team."
+
+        - name: total_rebounds
+          description: "Total rebounds by the team."
+
+        - name: total_defensive_rebounds
+          description: "Total defensive rebounds."
+
+        - name: total_offensive_rebounds
+          description: "Total offensive rebounds."
+
+        - name: total_blocks
+          description: "Total blocks by the team."
+
+        - name: total_steals
+          description: "Total steals by the team."
+
+        - name: total_turnovers
+          description: "Total turnovers committed by the team."
+
+    - name: mart_tournament_games
+      description: "Tournament game results enriched with top performing player from the winning team."
+      columns:
+        - name: tournament_game_id
+          description: "Unique identifier for the tournament game."
+          tests:
+            - not_null:
+                severity: warn
+            - unique:
+                severity: warn
+
+        - name: season
+          description: "Season in which the game was played."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: game_date
+          description: "Date of the tournament game."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: winning_team
+          description: "Team that won the game."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: winning_team_points
+          description: "Points scored by the winning team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: losing_team
+          description: "Team that lost the game."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: losing_team_points
+          description: "Points scored by the losing team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: point_difference
+          description: "Difference in points between the winning and losing team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: top_player_name
+          description: "Top performing player from the winning team."
+          tests:
+            - not_null:
+                severity: warn
+
+        - name: top_player_score
+          description: "Performance score of the top performing player."
+          tests:
+            - not_null:
+                severity: warn
+    - name: mart_player_performance
+      description: |
+        Contains player performance metrics for the season including performance score, rank within team, and draft eligibility.
+      columns:
+        - name: player_full_name
+          description: Full name of the player
+          tests:
+            - not_null:
+                severity: warn
+        - name: team_name
+          description: Name of the player's team
+          tests:
+            - not_null:
+                severity: warn
+        - name: player_rank
+          description: Rank of the player based on performance within the team
+          tests:
+            - not_null:
+                severity: warn
+        - name: performance_score
+          description: Computed performance score for the player
+          tests:
+            - not_null:
+                severity: warn
+        - name: draft_prospect
+          description: Boolean flag indicating if the player is a draft prospect
+          tests:
+            - not_null:
+                severity: warn
+        - name: player_status
+          description: Status of the player (e.g., active, retired)
+          tests:
+            - accepted_values:
+                values: ['ACT', 'IR', 'D-League', 'NWT', 'SUS']
+                severity: warn
+    - name: mart_player_events
+      description: |
+        Contains events for players in each game, ordered by event timestamp and game clock.
+      columns:
+        - name: player_season_id
+          description: Unique identifier for the player and season
+          tests:
+            - not_null:
+                severity: warn
+        - name: player_name
+          description: Name of the player
+          tests:
+            - not_null:
+                severity: warn
+        - name: season
+          description: Season in which the game event took place
+          tests:
+            - not_null:
+                severity: warn
+        - name: team
+          description: Team the player is associated with
+          tests:
+            - not_null:
+                severity: warn
+        - name: opponents
+          description: Opponent team in the event
+          tests:
+            - not_null:
+                severity: warn
+        - name: event
+          description: Type of event (e.g., score, rebound, assist)
+          tests:
+            - not_null:
+                severity: warn
+        - name: event_type
+          description: Category of event (e.g., scoring, foul, etc.)
+          tests:
+            - not_null:
+                severity: warn
+        - name: event_description
+          description: Detailed description of the event
+          tests:
+            - not_null:
+                severity: warn
+        - name: event_coordinates
+          description: Coordinates where the event took place
+          tests:
+            - not_null:
+                severity: warn
+        - name: event_timestamp
+          description: Timestamp of the event occurrence
+          tests:
+            - not_null:
+                severity: warn
+        - name: game_clock
+          description: Game clock at the time of the event
+          tests:
+            - not_null:
+                severity: warn
+        - name: event_order
+          description: Order of the event in the game sequence
+          tests:
+            - not_null:
+                severity: warn
