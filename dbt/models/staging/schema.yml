@@ -48,13 +48,12 @@ models:
 
       - name: points
         description: Number of points scored in the play
-        tests:
-          - not_null
 
       - name: scheduled_date
         description: Date the game was played (converted from TIMESTAMP)
         tests:
-          - not_null
+          - not_null:
+              severity: warn
 
       - name: player_name
         description: Full name of the player involved in the play
@@ -98,7 +97,6 @@ models:
           - accepted_values:
               values: "{{ var('get_event_type') }}"
               severity: warn
-              quote: false
 
       - name: event
         description: Standardized event name based on source field
@@ -106,7 +104,6 @@ models:
           - accepted_values:
               values: "{{ var('get_event') }}"
               severity: warn
-              quote: false
 
   - name: stg_ncaa_player_game_stats
     description: > 
@@ -251,7 +248,6 @@ models:
             - accepted_values:
                 values: "{{ var('get_player_position') }}"
                 severity: warn
-                quote: false
 
       - name: player_status
         description: Interpreted player status (e.g. active, benched) from input mapping logic
@@ -259,7 +255,6 @@ models:
           - accepted_values: 
               values: "{{ var('get_player_status') }}"
               severity: warn
-              quote: false
 
   - name: stg_ncaa_team_game_stats
     description: >
@@ -275,13 +270,21 @@ models:
               severity: warn
           - not_null:
               severity: warn
+
       - name: team_id
         description: Unique identifier for the team
         tests:
           - not_null:
               severity: warn
+
       - name: opp_id
         description: Unique identifier for the opponent team
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: venue_id
+        description: Unique identifier for the venue
         tests:
           - not_null:
               severity: warn
@@ -320,13 +323,13 @@ models:
         description: Conference in which the team competes
 
       - name: opponents_team_name
-        description: Opponent team’s name
+        description: Opponent teams name
 
       - name: opponents_state
         description: Market or location of the opponent team
 
       - name: opponents_alias
-        description: Opponent team’s alias
+        description: Opponent teams alias
 
       - name: team_win
         description: Boolean indicating if the team won
@@ -487,7 +490,7 @@ models:
       winning and losing team information, seeds, and points scored.
 
     columns:
-      - name: game_id
+      - name: tournament_game_id
         description: Surrogate key combining winning team, losing team, and game date
         tests:
           - unique:

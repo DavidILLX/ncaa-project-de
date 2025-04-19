@@ -39,6 +39,10 @@ models:
   ncaa_project:
     staging:
       materialized: view
+    core:
+      materialized: view
+    marts:
+      materialized: table
 
 vars:
   get_event: ['block', 'threepointmiss', 'freethrow', 'twopointmade', 'rebound', 'assist', 'steal', 'ejection', 'twopointmiss', 'fieldgoal', 'personalfoul', 'threepointmade', 'turnover', 'flagrantfoul', 'offensivefoul', 'technicalfoul', 'fouldrawn', 'attemptblocked']

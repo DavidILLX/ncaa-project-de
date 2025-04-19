@@ -11,12 +11,13 @@ with player_stats_base as (
     select
         player_team_id,
         game_id,
-        player_full_name
-        CONCAT('H: ',CAST(height as CHAR) , ', W:', CAST(weight as CHAR)) as physical_stats,
+        player_full_name,
+        CONCAT('H: ',CAST(height as STRING) , ', W:', CAST(weight as STRING)) as physical_stats,
         player_position,
         player_status,
-        birth_state,
-        birth_country,
+        birthplace_state,
+        birthplace_country,
+        team_id,
         team,
         number_of_games_played,
         number_of_games_as_starter,
@@ -40,7 +41,7 @@ with player_stats_base as (
         flagrant_fouls,
         points
 
-    from player_stats_base,
+    from player_stats_base
 )
 
 select
@@ -50,12 +51,12 @@ select
     physical_stats,
     player_position,
     player_status,
-    birth_state,
-    birth_country,
+    birthplace_state,
+    birthplace_country,
     team,
     number_of_games_played,
     number_of_games_as_starter,
-    minues_played,
+    minutes_played,
     field_goals_made,
     field_goals_percentage,
     two_points_made,
@@ -73,6 +74,6 @@ select
     personal_fouls,
     tech_fouls,
     flagrant_fouls,
-    points,
+    points
 
 from player_stats_aggregation

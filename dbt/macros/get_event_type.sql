@@ -24,6 +24,7 @@
         when 'officialtimeout' then 'Official Timeout'
         when 'delay' then 'Delay of Game'
         when 'threepointmade' then 'Made 3PT Shot'
+        else 'Other'
     end
 
 {%- endmacro%}

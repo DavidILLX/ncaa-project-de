@@ -9,38 +9,43 @@ with player_base as (
 
 , player_aggregation as (
     select
+        play_id,
         player_id,
         player_name,
         season,
+        game_id,
         team,
+        team_id,
         opponents,
         
         -- Basic sums of points
         sum(case when event = 'threepointmade' then 1 else 0 end) as three_point_shots_made,
         sum(case when event = 'twopointmade' then 1 else 0 end) as two_point_shots_made,
-        sum(case when event_type = 'freethrowmade' then 1 else 0 end) as freethrows_made,
+        sum(case when type_of_event = 'freethrowmade' then 1 else 0 end) as freethrows_made,
         sum(case when event = 'assist' then 1 else 0 end) as assists,
         sum(case when event = 'turnover' then 1 else 0 end) as turnovers,
         sum(case when event = 'block' then 1 else 0 end) as blocks,
         sum(case when event = 'steal' then 1 else 0 end) as steals,
+        sum(case when event = 'rebound' then 1 else 0 end) as rebounds,
 
         -- Total points made
-        count(*) filter (where event_type in ('threepointmade', 'twopointmade', 'freethrowmade')) as scoring_events_count
+        sum(case when type_of_event in ('threepointmade', 'twopointmade', 'freethrowmade') then 1 else 0 end) as scoring_events_count,
 
         -- Used for averages per game
         count(distinct game_id) as total_games,
 
     from player_base
-    group by player_id, player_name, season, team, opponents
+    group by play_id, player_id, player_name, season, game_id, team, team_id, opponents
 )
 
 select
-    {{ dbt_utils.generate_surrogate_key(['player_id', 'season']) }} as player_season_id,
+    play_id,
     player_id,
-    game_id,
     player_name,
     season,
+    game_id,
     team,
+    team_id,
     opponents,
     total_games,
     three_point_shots_made,
@@ -50,7 +55,7 @@ select
     turnovers,
     blocks,
     steals,
-    scoring_events_count,
-    total_points
+    rebounds,
+    scoring_events_count
 
 from player_aggregation

@@ -1,0 +1,366 @@
+version: 2
+
+models:
+  - name: int_ncaa_player_game_events
+    description: "Intermediate model that aggregates player-level events during games for a given season, with a surrogate key per player and season."
+    columns:
+      - name: play_id
+        description: "Unique surrogate key for player and season"
+        tests:
+          - unique:
+              severity: warn
+          - not_null:
+              severity: warn
+
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: player_name
+        description: "Name of the player"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: season
+        description: "Season of the game"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team
+        description: "Team of the player during the event"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: opponents
+        description: "Opponent team"
+
+      - name: event
+        description: "Raw event name or code"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: event_type
+        description: "Category or type of the event (e.g., shot, foul, turnover)"
+
+      - name: event_description
+        description: "Detailed description of the event"
+
+      - name: event_coordinates
+        description: "Location of the event on the court in x,y format"
+
+      - name: event_timestamp
+        description: "Timestamp of the event in the game"
+
+      - name: game_clock
+        description: "Game clock time when the event occurred"
+
+  - name: int_ncaa_player_season_stats
+    description: "Intermediate model aggregating player stats per game, including physical and performance metrics."
+    columns:
+      - name: player_team_id
+        description: "Unique identifier for a player-team combination"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: game_id
+        description: "Game identifier"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: player_full_name
+        description: "Full name of the player"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: physical_stats
+        description: "Concatenated string showing height and weight in format 'H: x, W: y'"
+
+      - name: player_position
+        description: "Player position (e.g., G, F, C)"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: player_status
+        description: "Current status of the player (e.g., Active, Injured, RET)"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: birth_state
+        description: "State where the player was born"
+
+      - name: birth_country
+        description: "Country where the player was born"
+
+      - name: team
+        description: "Team name"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: number_of_games_played
+        description: "Number of games the player has played"
+
+      - name: number_of_games_as_starter
+        description: "Number of games the player started"
+
+      - name: minutes_played
+        description: "Total minutes played" 
+
+      - name: field_goals_made
+        description: "Total field goals made"
+
+      - name: field_goals_percentage
+        description: "Field goal success rate in percentage"
+
+      - name: two_points_made
+        description: "Total 2-point shots made"
+
+      - name: two_points_percentage
+        description: "2-point shot success rate"
+
+      - name: three_points_made
+        description: "Total 3-point shots made"
+
+      - name: three_points_percentage
+        description: "3-point shot success rate"
+
+      - name: free_throws_made
+        description: "Total free throws made"
+
+      - name: free_throws_percentage
+        description: "Free throw success rate"
+
+      - name: offensive_rebounds
+        description: "Total offensive rebounds"
+
+      - name: defensive_rebounds
+        description: "Total defensive rebounds"
+
+      - name: assists
+        description: "Total assists"
+
+      - name: turnovers
+        description: "Total turnovers"
+
+      - name: steals
+        description: "Total steals"
+
+      - name: blocks
+        description: "Total blocks"
+
+      - name: personal_fouls
+        description: "Total personal fouls"
+
+      - name: tech_fouls
+        description: "Total technical fouls"
+
+      - name: flagrant_fouls
+        description: "Total flagrant fouls"
+
+      - name: points
+        description: "Total points scored"
+
+  - name: int_ncaa_player_stats
+    description: "Intermediate model aggregating player game events per season including made shots, assists, and other contributions."
+    columns:
+      - name: play_id
+        description: "Unique surrogate key combining player and season"
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: game_id
+        description: "Game identifier (may be NULL if aggregated over season)"
+
+      - name: player_name
+        description: "Full name of the player"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: season
+        description: "Season the stats are aggregated for"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team
+        description: "Team the player played for during the season"
+
+      - name: opponents
+        description: "List or identifier of opponents played against"
+
+      - name: total_games
+        description: "Number of distinct games played in the season"
+
+      - name: three_point_shots_made
+        description: "Total 3-point shots made in the season"
+
+      - name: two_point_shots_made
+        description: "Total 2-point shots made in the season"
+
+      - name: freethrows_made
+        description: "Total free throws made in the season"
+
+      - name: assists
+        description: "Total assists in the season"
+
+      - name: turnovers
+        description: "Total turnovers in the season"
+
+      - name: blocks
+        description: "Total blocks in the season"
+
+      - name: steals
+        description: "Total steals in the season"
+
+      - name: scoring_events_count
+        description: "Total number of scoring events (3pt, 2pt, FT) made in the season"
+
+      - name: total_points
+        description: "Total points scored in the season"
+
+  - name: int_ncaa_team_game_stats
+    description: "Intermediate model aggregating NCAA team stats per season including total and average performance metrics."
+    columns:
+
+      - name: team_id
+        description: "Unique identifier for the team"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team_name
+        description: "Full name of the team"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: team_alias
+        description: "Short alias or abbreviation of the team"
+
+      - name: season
+        description: "Season year"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: total_games
+        description: "Total number of games played in the season"
+
+      - name: wins
+        description: "Number of games won"
+
+      - name: losses
+        description: "Number of games lost"
+
+      - name: win_ratio
+        description: "Win ratio calculated as wins / total games"
+
+      - name: total_points
+        description: "Total points scored in the season"
+
+      - name: total_field_goals
+        description: "Total field goals made in the season"
+
+      - name: total_free_throws_made
+        description: "Total free throws made in the season"
+
+      - name: total_assists
+        description: "Total assists in the season"
+
+      - name: total_rebounds
+        description: "Total rebounds in the season"
+
+      - name: total_defensive_rebounds
+        description: "Total defensive rebounds"
+
+      - name: total_offensive_rebounds
+        description: "Total offensive rebounds"
+
+      - name: total_blocks
+        description: "Total blocks in the season"
+
+      - name: total_steals
+        description: "Total steals in the season"
+
+      - name: total_turnovers
+        description: "Total turnovers in the season"
+
+      - name: avg_points_per_game
+        description: "Average points per game"
+
+      - name: avg_assists_per_game
+        description: "Average assists per game"
+
+      - name: avg_field_goals_percentage
+        description: "Average field goal percentage across games"
+
+      - name: avg_two_points_percentage
+        description: "Average 2-point field goal percentage"
+
+      - name: avg_three_points_percentage
+        description: "Average 3-point field goal percentage"
+
+      - name: avg_free_throws_percentage
+        description: "Average free throw percentage"
+
+  - name: int_ncaa_tournament_games
+    description: "Intermediate model summarizing historical NCAA tournament games, including teams and score differences."
+    columns:
+      - name: tournament_game_id
+        description: "Unique identifier for the tournament game"
+        tests:
+          - not_null:
+              severity: warn
+          - unique:
+              severity: warn
+
+      - name: game_date
+        description: "Date of the tournament game"
+
+      - name: season
+        description: "Season year of the tournament"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: winning_team
+        description: "Concatenated name and alias of the winning team"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: winning_team_points
+        description: "Points scored by the winning team"
+
+      - name: losing_team
+        description: "Concatenated name and alias of the losing team"
+        tests:
+          - not_null:
+              severity: warn
+
+      - name: losing_team_points
+        description: "Points scored by the losing team"
+
+      - name: point_difference
+        description: "Difference in points between winning and losing teams"
