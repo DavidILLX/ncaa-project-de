@@ -18,7 +18,7 @@ with base as (
     select *,
         case
             when team_rank <= 15 then 'High'
-            when team_rank > 15 then 'Medium' 
+            when team_rank > 15 then 'Medium'
             else 'Low'
         end as performance_team
     from ranked
@@ -28,7 +28,6 @@ select
     season,
     team_rank,
     performance_team,
-    team_id, 
     team_name, 
     team_alias,
     total_games,

@@ -6,23 +6,22 @@
 
 with team_game_stats as 
 (
-  select scheduled_date, season, venue_state, venue_name, name, market, alias, conf_name, opp_name, opp_market, opp_alias, win, lead_changes, tied,
-  field_goals_made, field_goals_att, field_goals_pct, two_points_made, two_points_att, two_points_pct, three_points_made, three_points_att, three_points_pct,
+  select opp_id, game_id, team_id, venue_id, scheduled_date, season, venue_state, venue_name, name, market, alias, conf_name, opp_name, opp_market, opp_alias, win, lead_changes, times_tied,
+  field_goals_made, field_goals_att, field_goals_pct, two_points_made, two_points_att, two_points_pct, three_points_made, three_points_att, three_points_pct, fast_break_pts, second_chance_pts, team_turnovers,
   free_throws_made, free_throws_att, free_throws_pct, rebounds, offensive_rebounds, defensive_rebounds, assists, turnovers, steals, blocks, points, opp_points_game, opp_minutes,
   opp_field_goals_made, opp_field_goals_att, opp_field_goals_pct, opp_three_points_made, opp_three_points_att, opp_three_points_pct, opp_two_points_made, opp_two_points_att, opp_two_points_pct,
   opp_blocked_att, opp_free_throws_made, opp_free_throws_att, opp_free_throws_pct, opp_offensive_rebounds, opp_defensive_rebounds, opp_rebounds, opp_assists, opp_turnovers, opp_steals, opp_blocks,
-  opp_assists_turnover_ratio, opp_points, opp_fast_break_pts, opp_second_chance_pts, opp_team_turnovers, opp_points_off_turnover,
-    row_number() over(partition by scheduled_date) as rn
-  from {{ source('staging','ncaa_team_game_stats') }}
-  where player_id is not null 
+  opp_assists_turnover_ratio, opp_points, opp_fast_break_pts, opp_second_chance_pts, opp_team_turnovers, opp_points_off_turnovers
+  from {{ source('staging','ncaa_team_game_stats') }} 
 )
 
 select
     -- Identification
     {{dbt_utils.generate_surrogate_key(['team_id', 'opp_id', 'venue_id', 'game_id'])}} as played_game_id,
-    {{dbt.safe_cast("opp_id", api.Column.translate_type('string'))}},
-    {{dbt.safe_cast("game_id", api.Column.translate_type('string'))}},
-    {{dbt.safe_cast("team_id", api.Column.translate_type('string'))}},
+    {{dbt.safe_cast("opp_id", api.Column.translate_type('string'))}} as opp_id,
+    {{dbt.safe_cast("game_id", api.Column.translate_type('string'))}} as game_id,
+    {{dbt.safe_cast("team_id", api.Column.translate_type('string'))}} as team_id,
+    {{dbt.safe_cast("venue_id", api.Column.translate_type('string'))}} as venue_id,
 
     scheduled_date,
     season,
@@ -37,7 +36,9 @@ select
     opp_alias as opponents_alias,
     win as team_win,
     lead_changes,
-    tied as tied_game,
+    times_tied,
+
+    -- Team stats
     field_goals_made,
     field_goals_att as field_goals_attempted,
     field_goals_pct as field_goals_percentage,
@@ -58,6 +59,10 @@ select
     steals as team_steals,
     blocks as team_blocks,
     points as team_points,
+    fast_break_pts as team_fast_break_points,
+    second_chance_pts as team_second_chance_points,
+
+    -- Opponents stats
     opp_points_game as opponents_points_game,
     opp_minutes as opponents_minutes,
     opp_field_goals_made as opponents_field_goals_made,
@@ -85,14 +90,6 @@ select
     opp_fast_break_pts as opponents_fast_break_points,
     opp_second_chance_pts as opponents_second_chance_points,
     opp_team_turnovers as opponents_team_turnovers,
-    opp_points_off_turnover as opponents_points_off_turnover,
-    
-from ncaa_dataset.ncaa_team_game_stats,
-where rn = 1
+    opp_points_off_turnovers as opponents_points_off_turnovers
 
--- dbt build --select <model_name> --vars '{'is_test_run': 'false'}'
-{% if var('is_test_run', default=true) %}
-
-  limit 100
-
-{% endif %}
+from ncaa_dataset.ncaa_team_game_stats

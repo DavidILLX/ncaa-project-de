@@ -16,8 +16,8 @@ with base as (
         count(*) as total_games,
 
         -- Calculating teams wins and losses
-        sum(case when team_win = true then 1 else 0) as wins,
-        sum(case when team_win = false then 0 else 1) as losses,
+        sum(case when team_win = true then 1 else 0 end) as wins,
+        sum(case when team_win = false then 1 else 0 end) as losses,
 
         -- Calculating basics statistics for team
         sum(team_points) as total_points,
@@ -38,11 +38,10 @@ with base as (
         avg(team_assists) as avg_assists_per_game
 
     from base
-    group by team_id, season
+    group by team_id, team_name, team_alias, season
 )
 
 select
-    {{ dbt_utils.generate_surrogate_key(['team_id', 'season']) }} as team_season_id,
     team_id,
     team_name,
     team_alias,

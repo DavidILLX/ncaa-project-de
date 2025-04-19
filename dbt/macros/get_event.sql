@@ -2,9 +2,9 @@
     This macro returns readable description of event
 #}
 
-{% macro get_event(event) -%}
+{% macro get_event(type) -%}
 
-    case {{dbt.safe_cast("event", api.Column.translate_type("string"))}}
+    case {{dbt.safe_cast("type", api.Column.translate_type("string"))}}
         when 'block' then 'Block'
         when 'threepointmiss' then 'Missed 3PT Shot'
         when 'freethrow' then 'Free Throw'

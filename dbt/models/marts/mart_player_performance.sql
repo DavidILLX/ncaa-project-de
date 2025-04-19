@@ -10,11 +10,12 @@ with base as (
 
 , performance_evaluation as (
     select 
+        player_team_id,
         player_full_name,
         physical_stats,
         player_position,
         player_status,
-        team_name,
+        team,
         number_of_games_played,
         number_of_games_as_starter,
         minutes_played,
@@ -38,7 +39,9 @@ with base as (
         points,
         (points * 0.7 + offensive_rebounds * 0.5 + defensive_rebounds * 0.5 + 
         assists * 0.7 + steals * 0.4 + blocks * 0.5 - turnovers * 0.5) as performance_score,
-        dense_rank() over(partition by team_name order by performance_score) as player_rank
+        
+        dense_rank() over(partition by team order by (points * 0.7 + offensive_rebounds * 0.5 + defensive_rebounds * 0.5 + 
+        assists * 0.7 + steals * 0.4 + blocks * 0.5 - turnovers * 0.5)) as player_rank
     from base
 )
 
@@ -55,7 +58,7 @@ select
     physical_stats,
     player_position,
     player_status,
-    team_name,
+    team,
     number_of_games_played,
     number_of_games_as_starter,
     minutes_played,
@@ -79,5 +82,6 @@ select
     points,
     player_rank,
     performance_score,
-    draft_prospect,
+    draft_prospect
+
 from performance
