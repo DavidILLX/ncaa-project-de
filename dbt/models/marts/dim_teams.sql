@@ -8,4 +8,10 @@ select distinct
     team_alias,
     team_state,
     conference_name,
-from {{ ref('stg_ncaa_team_game_stats') }}
+    conference_alias,
+    league_name,
+    league_alias,
+    division_name,
+    division_alias
+
+from {{ ref('int_ncaa_team_game_stats') }}

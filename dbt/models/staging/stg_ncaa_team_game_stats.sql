@@ -11,7 +11,7 @@ with team_game_stats as
   free_throws_made, free_throws_att, free_throws_pct, rebounds, offensive_rebounds, defensive_rebounds, assists, turnovers, steals, blocks, points, opp_points_game, opp_minutes,
   opp_field_goals_made, opp_field_goals_att, opp_field_goals_pct, opp_three_points_made, opp_three_points_att, opp_three_points_pct, opp_two_points_made, opp_two_points_att, opp_two_points_pct,
   opp_blocked_att, opp_free_throws_made, opp_free_throws_att, opp_free_throws_pct, opp_offensive_rebounds, opp_defensive_rebounds, opp_rebounds, opp_assists, opp_turnovers, opp_steals, opp_blocks,
-  opp_assists_turnover_ratio, opp_points, opp_fast_break_pts, opp_second_chance_pts, opp_team_turnovers, opp_points_off_turnovers
+  opp_assists_turnover_ratio, opp_points, opp_fast_break_pts, opp_second_chance_pts, opp_team_turnovers, opp_points_off_turnovers, conf_alias, league_name, league_alias, division_name, division_alias
   from {{ source('staging','ncaa_team_game_stats') }} 
 )
 
@@ -31,6 +31,11 @@ select
     market as team_state,
     alias as team_alias,
     conf_name as conference_name,
+    conf_alias as conference_alias,
+    league_name,
+    league_alias,
+    division_name,
+    division_alias,
     opp_name as opponents_team_name,
     opp_market as opponents_state,
     opp_alias as opponents_alias,

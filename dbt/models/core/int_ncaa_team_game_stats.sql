@@ -9,10 +9,23 @@ with base as (
 
 , game_aggregation as (
     select
+        game_id,
         team_id,
         team_name,
         team_alias,
+        team_state,
         season,
+        conference_name,
+        conference_alias,
+        league_name,
+        league_alias,
+        division_name,
+        division_alias,
+        opp_id,
+        opponents_team_name,
+        opponents_state,
+        opponents_alias,
+
         count(*) as total_games,
 
         -- Calculating teams wins and losses
@@ -38,18 +51,36 @@ with base as (
         avg(team_assists) as avg_assists_per_game
 
     from base
-    group by team_id, team_name, team_alias, season
+    group by game_id, team_id, team_name, team_alias, team_state, season, conference_name, conference_alias, league_name, league_alias, division_name, division_alias, opp_id, opponents_team_name, opponents_state, opponents_alias
 )
 
 select
+    game_id,
     team_id,
     team_name,
     team_alias,
+    team_state,
     season,
+
+    -- League information
+    conference_name,
+    conference_alias,
+    league_name,
+    league_alias,
+    division_name,
+    division_alias,
+
+    -- Game stats
     total_games,
     wins,
     losses,
     round(wins * 1.0 / nullif(total_games, 0), 3) as win_ratio,
+
+    -- Opponents¨
+    opp_id,
+    opponents_team_name,
+    opponents_state,
+    opponents_alias,
 
     -- Raw totals
     total_points,
