@@ -8,12 +8,10 @@ select distinct
     abbrevated_name,
     height,
     weight,
+    physical_stats,
     player_position,
     player_status,
-    birth_state,
-    birth_country,
-    player_status,
-    team_id,
-    team_name
+    birthplace_state,
+    birthplace_country,
 
-from {{ ref('stg_ncaa_player_game_stats') }}
+from {{ ref('int_ncaa_player_season_stats') }}

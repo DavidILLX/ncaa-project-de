@@ -6,7 +6,7 @@
 
 with player_game_stats as 
 (
-  select player_id, game_id, team_id, full_name, abbr_name, height, weight, birthplace_state, birthplace_country, team_name, team_market,
+  select player_id, game_id, team_id, season, full_name, abbr_name, height, weight, birthplace_state, birthplace_country, team_name, team_market,
   played, starter, minutes_int64, field_goals_made, field_goals_att, field_goals_pct, two_points_made, 
   two_points_att, two_points_pct, three_points_made, three_points_att, three_points_pct, 
   free_throws_made, free_throws_att, free_throws_pct, offensive_rebounds, defensive_rebounds, 
@@ -24,6 +24,7 @@ select
 
     -- Get only the date from TIMESTAMP
     date(scheduled_date) as scheduled_date,
+    season,
 
     full_name as player_full_name,
     abbr_name as abbrevated_name,
@@ -59,6 +60,7 @@ select
     personal_fouls,
     tech_fouls,
     flagrant_fouls,
+    (personal_fouls + tech_fouls + flagrant_fouls) as fouls,
     points,
 
     {{get_player_position('position')}} as player_position,
