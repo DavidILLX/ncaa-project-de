@@ -64,9 +64,25 @@ https://cloud.google.com/compute/docs/connect/add-ssh-keys
 https://cloud.google.com/compute/docs/connect/create-ssh-keys#windows-10-or-later
 
 Windows:
-
-`ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME`
-
+`ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME`  
 
 Linux:  
-`ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME`
+`ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME`  
+
+Create the project on the Google Cloud Console. The Terraform will automatically use Application Default Account (your Gmail to create the Infrastructure).  
+It will create one service account with all the necessary permission (not the best practice, but for project will do) after that it will download the key json file  
+into the terraform folder, which will be used later.
+If the GOOGLE_APPLICATION_CREDENTIALS environment variable is set, it will override ADC. 
+Use any of these in terminal:
+`Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS`
+`$Env:GOOGLE_APPLICATION_CREDENTIALS`
+
+Establish adc with gcloud auth application-default login
+cherck with:
+
+gcloud auth list 
+
+set correctly with:
+<pre lang="markdown">```gcloud projects add-iam-policy-binding ncaa-project-455618 \
+--member="user: YOUR GMAIL HERE" \
+--role="roles/serviceusage.serviceUsageConsumer"```</pre>
