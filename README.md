@@ -68,5 +68,5 @@ Windows:
 `ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME`
 
 
-Linux:
+Linux:  
 `ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME`
