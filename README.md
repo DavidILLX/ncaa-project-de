@@ -1,6 +1,6 @@
 # 🏀 NCAA Basketball ELT Pipeline (GCP + dbt + Kestra)
 
-This project showcases a modern ELT (Extract, Load, Transform) pipeline processing data from the NCAA Basketball dataset. The goal is to demonstrate that an end-to-end data pipeline is fully deployed on the Google Cloud Platform (GCP), from infrastructure provisioning to analytics and visualization. Each tile in Looker helps with visualizing aggregated data about players, player events, teams, and historical tournaments.
+This project showcases a modern ELT (Extract, Load, Transform) pipeline processing data from the NCAA Basketball dataset. The goal is to demonstrate that an end-to-end data pipeline is fully deployed on the Google Cloud Platform (GCP), from infrastructure provisioning to analytics and visualization. Each tile in Looker helps with visualizing aggregated data about players, player events, teams, and historical tournaments. We can easily compare how the team manages in the season or see how specific players fare against each time with a scatterplot showing the events (heatmap) of their actions during the game, and also see player stats with their performance score and see if they are a valid draft prospect for the NBA.
 
 ## ⚙️ Technologies Used
 
