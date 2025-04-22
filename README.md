@@ -65,7 +65,7 @@ https://cloud.google.com/compute/docs/connect/create-ssh-keys#windows-10-or-late
 
 Windows:
 
-/ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME/
+\ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME\
 
 
 linux
