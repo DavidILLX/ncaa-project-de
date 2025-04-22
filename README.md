@@ -66,7 +66,7 @@ https://cloud.google.com/compute/docs/connect/create-ssh-keys#windows-10-or-late
 Windows:
 <pre lang="markdown"> ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME</pre>  
 
-Linux:<pre lang="markdown"> `ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME`</pre>   
+Linux:<pre lang="markdown"> ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME</pre>   
 
 Create the project on the Google Cloud Console. The Terraform will automatically use Application Default Account (your Gmail to create the Infrastructure).  
 It will create one service account with all the necessary permission (not the best practice, but for project will do) after that it will download the key json file  
@@ -82,9 +82,9 @@ cherck with:
 gcloud auth list 
 
 set correctly with:
-<pre lang="markdown">```gcloud projects add-iam-policy-binding ncaa-project-455618 \
+<pre lang="markdown">gcloud projects add-iam-policy-binding ncaa-project-455618 \
 --member="user: YOUR GMAIL HERE" \
---role="roles/serviceusage.serviceUsageConsumer"```</pre>
+--role="roles/serviceusage.serviceUsageConsumer"</pre>
 
 Now that this is set up just add the projects id as the default connected project on gcloud:
 <pre lang="markdown">`gcloud auth application-default set-quota-project PROJECT-ID`</pre>
