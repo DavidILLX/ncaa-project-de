@@ -49,5 +49,24 @@ Infrastructure and services are managed with:
 ![Architecture](./img/diagram.png)
 
 ## 📁 Project Structure
+├── terraform/ # Terraform config for GCP resources 
+├── kestra/ # Kestra workflows (YAML) 
+├── dbt/ # dbt project for data modeling 
+├── docker/ # Deployment of Kestra and PgAdmin 
+├── README.md # Project overview
 
-. ├── terraform/ # Terraform config for GCP resources ├── kestra/ # Kestra workflows (YAML) ├── dbt/ # dbt project for data modeling ├── docker-compose.yml # Deployment of Kestra and PgAdmin ├── README.md # Project overview
+
+## Manual for deployment
+First, let's create the SSH key for the Virtual machine  
+Generate SSH key: 
+
+https://cloud.google.com/compute/docs/connect/add-ssh-keys
+https://cloud.google.com/compute/docs/connect/create-ssh-keys#windows-10-or-later
+
+Windows:
+
+/ssh-keygen -t rsa -f C:\Users\WINDOWS_USER\.ssh\KEY_FILENAME -C USERNAME/
+
+
+linux
+ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME
