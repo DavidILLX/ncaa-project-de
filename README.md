@@ -86,4 +86,12 @@ set correctly with:
 --member="user: YOUR GMAIL HERE" \
 --role="roles/serviceusage.serviceUsageConsumer"```</pre>
 
+Now that this is set up just add the projects id as the default connected project on gcloud:
+<pre lang="markdown">`gcloud auth application-default set-quota-project PROJECT-ID`</pre>
+
+Now all that is needed is simple:
+<pre lang="markdown">`terraform init`</pre>
+<pre lang="markdown">`terraform plan`</pre>
+<pre lang="markdown">`terraform apply`</pre>
+
 
