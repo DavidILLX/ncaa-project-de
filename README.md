@@ -73,8 +73,8 @@ It will create one service account with all the necessary permission (not the be
 into the terraform folder, which will be used later.
 If the GOOGLE_APPLICATION_CREDENTIALS environment variable is set, it will override ADC. 
 Use any of these in terminal:
-<pre lang="markdown">`Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS`</pre>
-<pre lang="markdown">`$Env:GOOGLE_APPLICATION_CREDENTIALS`</pre>
+<pre lang="markdown">Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS</pre>
+<pre lang="markdown">$Env:GOOGLE_APPLICATION_CREDENTIALS</pre>
 
 Establish adc with gcloud auth application-default login
 cherck with:
@@ -89,9 +89,20 @@ set correctly with:
 Now that this is set up just add the projects id as the default connected project on gcloud:
 <pre lang="markdown">`gcloud auth application-default set-quota-project PROJECT-ID`</pre>
 
-Now all that is needed is simple:
+Now all that is needed is simple. It will take some time to set up. PostgreSQL and Dataproc usauslay takes about 4-5min:
 <pre lang="markdown">`terraform init`</pre>
 <pre lang="markdown">`terraform plan`</pre>
 <pre lang="markdown">`terraform apply`</pre>
+
+Logging into the vm with ssh key. You need the external ip from the VM on gcloud when it is running.  
+Check for the External IP to connect to the VM machine.  
+With a command you can access the VM or create a config file with structure like this
+<pre lang="markdown">ssh -i ~/.ssh/gcp_ssh user@externalip</pre> 
+
+<pre lang="markdown">Host vm-instance-1
+    HostName externalIP
+    User user
+    IdentityFile c:/Users/user/.ssh/gpc_ssh</pre>
+
 
 
