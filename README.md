@@ -1,6 +1,6 @@
 # 🏀 NCAA Basketball ELT Pipeline (GCP + dbt + Kestra)
 
-This project showcases a modern ELT (Extract, Load, Transform) pipeline processing data from the NCAA Basketball dataset. The goal is to demonstrate that an end-to-end data pipeline is fully deployed on the Google Cloud Platform (GCP), from infrastructure provisioning to analytics and visualization. Each tile in looker helps with visualazing aggregated data about players, player events, teams and historical tournaments.
+This project showcases a modern ELT (Extract, Load, Transform) pipeline processing data from the NCAA Basketball dataset. The goal is to demonstrate that an end-to-end data pipeline is fully deployed on the Google Cloud Platform (GCP), from infrastructure provisioning to analytics and visualization. Each tile in Looker helps with visualizing aggregated data about players, player events, teams, and historical tournaments.
 
 ## ⚙️ Technologies Used
 
@@ -31,7 +31,7 @@ This project showcases a modern ELT (Extract, Load, Transform) pipeline processi
      - Load data from GCS to BigQuery (raw tables)
 
 3. **Data Transformation with dbt**  
-   - dbt models transform raw data into intermediate, dimensional, and fact layers
+   - DBT models transform raw data into intermediate, dimensional, and fact layers
    - Results are materialized in BigQuery
 
 4. **Visualization with Looker**  
@@ -52,7 +52,7 @@ Infrastructure and services are managed with:
 
 ![Player_stats](./img/player_stats.png) 
 
-![Player_events](./img/playeer_events.png)  
+![Player_events](./img/player_events.png)  
 
 ![Team_stats](./img/team.png)  
 
@@ -97,14 +97,14 @@ set correctly with:
 Now that this is set up, just add the project's ID as the default connected project on GCloud:
 <pre lang="markdown">`gcloud auth application-default set-quota-project PROJECT-ID`</pre>
 
-Now, all that is needed is simple. It will take some time to set up. PostgreSQL and Dataproc usually takes about 4 - 5 min:
+Now, all that is needed is simple. It will take some time to set up. PostgreSQL and Dataproc usually take about 4 - 5 minutes:
 <pre lang="markdown">`terraform init`</pre>
 <pre lang="markdown">`terraform plan`</pre>
 <pre lang="markdown">`terraform apply`</pre>
 
 Logging into the VM with SSH key. You need the external IP from the VM on GCloud when it is running.  
 Check the External IP to connect to the VM machine.  
-With a command, you can access the VM or create a config file witha  structure like this
+With a command, you can access the VM or create a config file with a  structure like this
 <pre lang="markdown">ssh -i ~/.ssh/gcp_ssh user@externalip</pre> 
 
 <pre lang="markdown">Host vm-instance-1
@@ -112,7 +112,7 @@ With a command, you can access the VM or create a config file witha  structure l
     User user
     IdentityFile c:/Users/user/.ssh/gpc_ssh</pre>
 
-Then run sftp to transfer Google credentials for Google Cloud. Navigate to your directory where the JSON credentials are based on Terraform it should be „/terraform/gcp_credentisl.json“
+Then run sftp to transfer Google credentials for Google Cloud. Navigate to your directory where the JSON credentials are based on Terraform, it should be „/terraform/gcp_credentisl.json“
 Running the sftp with:
 <pre lang="markdown">sftp vm-instance-1
 mkdir .gc
