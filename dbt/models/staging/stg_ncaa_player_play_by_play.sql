@@ -6,8 +6,8 @@
 
 with play_by_play as 
 (
-  select player_id, game_id, team_id, points_scored, scheduled_date, player_full_name,
-    team_name, shot_type, shot_made, attendance, game_clock, season, rebound_type,
+  select player_id, game_id, team_id, away_id, points_scored, scheduled_date, player_full_name,
+    team_name, away_name, shot_type, shot_made, attendance, game_clock, season, rebound_type,
     turnover_type, event_coord_x, event_coord_y, event_description, timestamp, type, event_type
   from {{ source('staging','ncaa_player_play_by_play') }}
   where game_id is not null 
@@ -19,7 +19,7 @@ select
     {{dbt.safe_cast("player_id", api.Column.translate_type('string'))}} as player_id,
     {{dbt.safe_cast("game_id", api.Column.translate_type('string'))}} as game_id,
     {{dbt.safe_cast("team_id", api.Column.translate_type('string'))}} as team_id,
-
+    {{dbt.safe_cast("away_id", api.Column.translate_type('string'))}} as opponents_id,
     -- Casting from FLOAT to INT
     cast(points_scored as integer) as points,
 
