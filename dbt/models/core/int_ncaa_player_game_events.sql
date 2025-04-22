@@ -16,11 +16,14 @@ with player_event_base as (
         season,
         team_id,
         team,
+        opponents_id,
         opponents,
         event,
         type_of_event,
         event_description,
         CONCAT(event_coordinates_x,', ' , event_coordinates_y) as event_coordinates,
+        event_coordinates_x,
+        event_coordinates_y,
         event_timestamp,
         game_clock
         
@@ -34,11 +37,14 @@ select
     season,
     team,
     team_id,
+    opponents_id,
     opponents,
     event,
     type_of_event,
     event_description,
     event_coordinates,
+    event_coordinates_x,
+    event_coordinates_y,
     event_timestamp,
     game_clock
 
