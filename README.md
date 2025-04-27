@@ -143,7 +143,7 @@ This workflow orchestration is automated with dependencies to start every Monday
 
 After that is done, now comes the dbt cloud platform to change, or rather, transform the data. From staging to core models and finally data marts models with facts and dimensinals table based on Kimballs star schema.
 
-After that the project is visualized in Google Looker with 3 tiles below to show team performance, player events (shooting, fouls, and rebounding with map of the field to show where it happened and description with pie graphs to show events and player basic statistics (points, rebounds, steal,s etc.)
+After that the project is visualized in Google Looker with 3 tiles above to show team performance, player events (shooting, fouls, and rebounding with map of the field to show where it happened and description with pie graphs to show events and player basic statistics (points, rebounds, steal,s etc.)
 
 
 
