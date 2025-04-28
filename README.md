@@ -133,17 +133,21 @@ Navigate to the Docker directory and run the Docker-compose file with sudo docke
 
 <pre lang="markdown">docker-compose up -d</pre>
 
-Now the latest Kestra image should be pulled up and running with a connection to the GCP PostgreSQL. The kestra interface will be on externalIP:8080 port
+Now the latest Kestra image should be pulled up and running with a connection to the GCP PostgreSQL. The kestra interface will be on EXTERNAL_IP:8080 port
 with credentials like those in the Docker-Compose file.
 
-Then creating the first workflow with value keys for GCP, where the variables for Kestra key-value store from terraform, like dataset, bucket, and location. 
-
-Now add the export_from_bq_to_gcs, then create_tables_in_bq, and the last is load_csv_to_bq.  
-This workflow orchestration is automated with dependencies to start every Monday at 3:00 am
-
-After that is done, now comes the dbt cloud platform to change, or rather, transform the data. From staging to core models and finally data marts models with facts and dimensinals table based on Kimballs star schema.
-
-After that the project is visualized in Google Looker with 3 tiles above to show team performance, player events (shooting, fouls, and rebounding with map of the field to show where it happened and description with pie graphs to show events and player basic statistics (points, rebounds, steal,s etc.)
+**Kestra Workflows**:
+  - Exporting data from public NCAA Dataset to GCS.
+  - Creating tables in BigQuery.
+  - Loading CSV files from GCS into BigQuery.
+  - Scheduled automation every **Monday at 3:00 AM**.
+**dbt** is used for:
+  - Transforming staging data into core and data mart models.
+  - Following **Kimball’s Star Schema** methodology (facts and dimensions).
+**Looker** visualizes the final data models:
+  - Team performance KPIs.
+  - Player events (shooting, fouls, rebounds) on field maps.
+  - Event distributions and player statistics (points, rebounds, steals, etc.) via pie charts and tables.
 
 
 
