@@ -140,11 +140,16 @@ with credentials like those in the Docker-Compose file.
   - Exporting data from public NCAA Dataset to GCS
   - Creating tables in BigQuery
   - Loading CSV files from GCS into BigQuery
-  - Scheduled automation every **Monday at 3:00 AM**
+  - Scheduled automation every **Monday at 3:00 AM**  
+
+The dbt is run in the cloud dbt IDE with a connection to the BigQuery dataset. It is authenticated using the given service account key.  
+Models go from staging through core up to the data marts (facts & dims).
 
 **dbt**:
   - Transforming staging data into core and data mart models.
-  - Following **Kimball’s Star Schema** methodology (facts and dimensions).
+  - Following **Kimball’s Star Schema** methodology (facts and dimensions).  
+
+The results are visualized through Google Looker.
 
 **Looker**:
   - Team performance KPIs.
