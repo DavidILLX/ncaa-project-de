@@ -57,11 +57,11 @@ Infrastructure and services are managed with:
 ![Team_stats](./img/team.png)  
 
 ## 📁 Project Structure
-├── terraform/ # Terraform config for GCP resources 
-├── kestra/ # Kestra workflows (YAML) 
-├── dbt/ # dbt project for data modeling 
-├── docker/ # Deployment of Kestra and PgAdmin 
-├── README.md # Project overview
+├── terraform/ # Terraform config for GCP resources   
+├── kestra/ # Kestra workflows (YAML)  
+├── dbt/ # dbt project for data modeling  
+├── docker/ # Deployment of Kestra and PgAdmin   
+├── README.md # Project overview  
 
 
 ## Manual for deployment
