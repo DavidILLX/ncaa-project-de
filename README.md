@@ -137,14 +137,16 @@ Now the latest Kestra image should be pulled up and running with a connection to
 with credentials like those in the Docker-Compose file.
 
 **Kestra Workflows**:
-  - Exporting data from public NCAA Dataset to GCS.
-  - Creating tables in BigQuery.
-  - Loading CSV files from GCS into BigQuery.
-  - Scheduled automation every **Monday at 3:00 AM**.
-**dbt** is used for:
+  - Exporting data from public NCAA Dataset to GCS
+  - Creating tables in BigQuery
+  - Loading CSV files from GCS into BigQuery
+  - Scheduled automation every **Monday at 3:00 AM**
+
+**dbt**:
   - Transforming staging data into core and data mart models.
   - Following **Kimball’s Star Schema** methodology (facts and dimensions).
-**Looker** visualizes the final data models:
+
+**Looker**:
   - Team performance KPIs.
   - Player events (shooting, fouls, rebounds) on field maps.
   - Event distributions and player statistics (points, rebounds, steals, etc.) via pie charts and tables.
