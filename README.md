@@ -76,7 +76,7 @@ Windows:
 
 Linux:<pre lang="markdown"> ssh-keygen -t rsa -f ~/.ssh/KEY_FILENAME -C USERNAME</pre>   
 
-Create the project on the Google Cloud Console. The Terraform will automatically use Application Default Account (your Gmail to create the Infrastructure). It will create one service account with all the necessary permissions (not the best practice, but for the project it will do) After that, it will download the key JSON file  
+Create the project on the Google Cloud Console. The Terraform will automatically use Application Default Account (your Gmail to create the Infrastructure). It will create one service account with all the necessary permissions (not the best practice, but for the project it will do) After that, it will download the key JSON file
 into the terraform folder, which will be used later.
 If the GOOGLE_APPLICATION_CREDENTIALS environment variable is set, it will override ADC. 
 Use any of these in the terminal:
